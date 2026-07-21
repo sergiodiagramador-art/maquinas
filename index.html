@@ -1,14 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let registration of registrations) { registration.unregister(); }
-  });
-}
-</script>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1565c0">
@@ -288,6 +280,15 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 </style>
 </head>
 <body>
+<script>
+    localStorage.clear();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for(let r of regs) r.unregister();
+        });
+    }
+</script>
+
 <div id="bannerVencidas" onclick="switchView('painel')">🚨 RECOLHA ATRASADA! Toque para ver</div>
 
 <div class="header">
@@ -508,10 +509,18 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 
 <div class="toast" id="toast"></div>
 
-
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-  const firebaseConfig = {};
+  const firebaseConfig = {
+    apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
+    authDomain: "sosrim-592ab.firebaseapp.com",
+    projectId: "sosrim-592ab",
+    storageBucket: "sosrim-592ab.firebasestorage.app",
+    messagingSenderId: "483781840617",
+    appId: "1:483781840617:web:02a3d62b3e79f5b001ea78",
+    measurementId: "G-HW70F0DEEH"
+  };
   // OFF
   const db = null;
 
@@ -535,7 +544,7 @@ var PRESET_HOSPITALS = [
   { id: 'p15', nome: 'Yoshimi',                          lat: -25.4064179,  lng: -49.1976728,  raio: 150 }
 ];
 
-var state = JSON.parse(localStorage.getItem('hm_local_final_v1') || 'null');
+var state = JSON.parse(localStorage.getItem('hm_final_v500') || 'null');
 if (!state) {
   state = {
     machines: [],
@@ -560,7 +569,7 @@ if (!state) {
 }
 
 function save() {
-  localStorage.setItem('hm_local_final_v1', JSON.stringify(state));
+  localStorage.setItem('hm_final_v500', JSON.stringify(state));
   if (typeof db !== 'undefined') {
     db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
   }
