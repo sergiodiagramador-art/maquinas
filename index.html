@@ -3,8 +3,7 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>Logística v3.1 - AZULÃO PRO</title>
-    <!-- Atualização Forçada: 1784646432.10043 -->
+    <title>Logística v3.2 - 1784646589</title>
     <style>
         body { font-family: sans-serif; background: #0056b3; margin: 0; color: white; text-align: center; overflow: hidden; }
         header { background: #004494; padding: 10px; font-weight: bold; font-size: 18px; border-bottom: 2px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
@@ -25,7 +24,7 @@
 </head>
 <body>
     <header>
-        <span>v3.1 AZULÃO</span>
+        <span>v3.2 AZULÃO</span>
         <span id='disp-driver' onclick='openDriver()' style='background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:5px; font-size:12px;'>👤 Sérgio</span>
     </header>
     <div class='control-bar'>
@@ -44,7 +43,7 @@
         function render() {
             document.getElementById('grid').innerHTML = state.m.map(m => '<div class="card '+m.s+'" onclick="tapM('+m.id+')">'+m.id+'<br><small>'+(m.h||m.s.toUpperCase())+'</small></div>').join('');
             document.getElementById('disp-driver').innerText = '👤 ' + state.d;
-            localStorage.setItem('hm_v31_stable', JSON.stringify(state));
+            localStorage.setItem('hm_v32_stable', JSON.stringify(state));
         }
         function tapM(id) {
             const m = state.m.find(x => x.id === id);
@@ -60,7 +59,7 @@
         function setDest(hName, sType) { if(batchType === 'single') { const m = state.m.find(x => x.id === batchQty); m.s = sType; m.h = (sType==='hosp'?hName:''); } else { execLote(sType, hName); } closeM('modal-dest'); render(); }
         function execLote(sType, hName) { let count = 0; state.m.forEach(m => { if(batchType === 'retirar' && m.s === 'base' && count < batchQty) { m.s = sType; m.h = (sType==='hosp'?hName:''); count++; } else if(batchType === 'inserir' && m.s !== 'base' && count < batchQty) { m.s = 'base'; m.h = ''; count++; } }); render(); }
         function closeM(id) { document.getElementById(id).style.display='none'; }
-        const saved = localStorage.getItem('hm_v31_stable'); if(saved) state = JSON.parse(saved); render();
+        const saved = localStorage.getItem('hm_v32_stable'); if(saved) state = JSON.parse(saved); render();
     </script>
 </body>
 </html>
