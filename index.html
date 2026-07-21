@@ -341,7 +341,8 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
         <div style="font-size:12px;color:#34a853;padding:8px 0">📍 Será usada sua localização GPS atual</div>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="abrirRota()">🗺️ Abrir rota no Google Maps</button>
+    <button class="btn btn-primary" onclick="abrirRota('maps')">🗺️ Abrir no Google Maps</button>
+    <button class="btn btn-primary" style="background:#05c8f5" onclick="abrirRota('waze')">🚕 Abrir no Waze</button>
     <button class="btn btn-gray" onclick="closeModal('modalRota')">Fechar</button>
   </div>
 </div>
@@ -1095,7 +1096,8 @@ function toggleRotaPartida() {
   document.getElementById('rotaGpsDiv').style.display    = tipo === 'gps'    ? 'block' : 'none';
 }
 
-function abrirRota() {
+function abrirRota(app) {
+  app = app || 'maps';
   var tipo = document.getElementById('rotaPartidaTipo').value;
 
   // Só inclui máquinas que já podem ser recolhidas AGORA:
@@ -1158,24 +1160,25 @@ function abrirRota() {
     var end = document.getElementById('rotaBaseEnd').value.trim();
     if (!end) { showToast('Informe o endereço da base!'); return; }
     localStorage.setItem('baseEndereco', end);
-    montarUrlRota(encodeURIComponent(end), waypoints);
+    montarUrlRota(encodeURIComponent(end), waypoints, app);
   } else if (tipo === 'manual') {
     var endM = document.getElementById('rotaManualEnd').value.trim();
     if (!endM) { showToast('Informe o endereço de partida!'); return; }
-    montarUrlRota(encodeURIComponent(endM), waypoints);
+    montarUrlRota(encodeURIComponent(endM), waypoints, app);
   } else {
     // GPS
     if (!navigator.geolocation) { showToast('GPS não disponível!'); return; }
     navigator.geolocation.getCurrentPosition(function(pos) {
       var origem = pos.coords.latitude + ',' + pos.coords.longitude;
-      montarUrlRota(origem, waypoints);
+      montarUrlRota(origem, waypoints, app);
     }, function() {
       showToast('Não foi possível obter sua localização.');
     });
   }
 }
 
-function montarUrlRota(origem, waypoints) {
+function montarUrlRota(origem, waypoints, app) {
+  app = app || 'maps';
   // Se origem é endereço (texto), não tenta otimizar pelo vizinho mais próximo
   // A ordem já vem priorizada por prazo de abrirRota()
   var origemParts = origem.split(',');
@@ -1210,14 +1213,26 @@ function montarUrlRota(origem, waypoints) {
 
   var destino = ordered[ordered.length - 1];
   var wps = ordered.slice(0, -1);
-  var url = 'https://www.google.com/maps/dir/?api=1' +
-    '&origin=' + origem +
-    '&destination=' + destino +
-    (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
-    '&travelmode=driving';
+
+  var url;
+  if (app === 'waze') {
+    // Waze só aceita 1 destino — abre o primeiro da lista
+    // Os outros ficam salvos para abrir em sequência
+    var primeiro = ordered[0];
+    var partes = primeiro.split(',');
+    url = 'https://waze.com/ul?ll=' + partes[0] + '%2C' + partes[1] + '&navigate=yes';
+    if (ordered.length > 1) {
+      showToast('Waze abrirá hospital a hospital. Total: ' + ordered.length);
+    }
+  } else {
+    url = 'https://www.google.com/maps/dir/?api=1' +
+      '&origin=' + origem +
+      '&destination=' + destino +
+      (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
+      '&travelmode=driving';
+  }
+
   closeModal('modalRota');
-  // Tenta abrir o Google Maps app nativo primeiro
-  var appUrl = url.replace('https://www.google.com/maps', 'comgooglemaps://');
   var link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
