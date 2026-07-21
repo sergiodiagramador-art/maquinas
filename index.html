@@ -171,6 +171,10 @@ body {
 
 <!-- Hospitais -->
 <div id="view-hospitais" class="view">
+    <div style="margin-bottom: 20px;">
+        <button class="btn btn-green" style="width:100%; margin:0;" onclick="adicionarNovoHospital()">➕ Cadastrar Novo Hospital</button>
+    </div>
+
     <h3 style="margin-top:0">Lista de Hospitais (15)</h3>
     <div class="hospital-list" id="list-hospitais"></div>
 </div>
@@ -414,9 +418,26 @@ body {
         save(); renderAll();
     }
 
+    
+    function adicionarNovoHospital() {
+        const nome = prompt("Digite o nome do novo hospital:");
+        if (!nome || nome.trim() === "") return;
+        
+        if (state.hospitals.includes(nome)) {
+            alert("Este hospital já existe na lista.");
+            return;
+        }
+        
+        state.hospitals.push(nome);
+        save();
+        renderAll();
+        alert(`Hospital "${nome}" adicionado com sucesso!`);
+    }
+
     init();
 </script>
 </body>
 </html>
+
 
 
