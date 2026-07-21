@@ -518,15 +518,15 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 // ── STATE ──
 var TOTAL = 18;
 var PRESET_HOSPITALS = [
-  { id: 'p1',  nome: 'Hospital Erasto Gaertner',        lat: -25.4535814,  lng: -49.2388060,  raio: 60 },
+  { id: 'p1',  nome: 'Hospital Erasto Gaertner',         lat: -25.4535814,  lng: -49.2388060,  raio: 60 },
   { id: 'p2',  nome: 'Hospital Erastinho',               lat: -25.4528189,  lng: -49.2386190,  raio: 60 },
   { id: 'p3',  nome: 'Hospital Pilar',                   lat: -25.4155502,  lng: -49.2789642,  raio: 150 },
-  { id: 'p4',  nome: 'Centro Hospitalar Nossa Saúde',    lat: -25.4202592,  lng: -49.2921622,  raio: 150 },
-  { id: 'p5',  nome: 'Hospital Nossa Senhora das Graças',lat: -25.4210967,  lng: -49.290718,   raio: 150 },
-  { id: 'p6',  nome: 'Hospital São Marcelino Champagnat',lat: -25.4360463,  lng: -49.2463727,  raio: 150 },
-  { id: 'p7',  nome: 'Hospital Ônix Batel',              lat: -25.4418182,  lng: -49.2980751,  raio: 150 },
-  { id: 'p8',  nome: 'Hospital Ônix Mateus Leme',        lat: -25.3972,     lng: -49.3110,     raio: 150 },
-  { id: 'p9',  nome: 'Maternidade do Trabalhador',       lat: -25.4350,     lng: -49.2620,     raio: 150 },
+  { id: 'p4',  nome: 'Hospital N. Sra. das Graças',      lat: -25.4192,     lng: -49.2801,     raio: 150 },
+  { id: 'p5',  nome: 'Hospital Marcelino Champagnat',    lat: -25.4358,     lng: -49.2392,     raio: 150 },
+  { id: 'p6',  nome: 'Hospital INC Ecoville',            lat: -25.4419,     lng: -49.3495,     raio: 150 },
+  { id: 'p7',  nome: 'Hospital Cruz Vermelha',           lat: -25.4347,     lng: -49.2885,     raio: 150 },
+  { id: 'p8',  nome: 'Hospital Santa Casa',              lat: -25.4339,     lng: -49.2736,     raio: 150 },
+  { id: 'p9',  nome: 'Hospital do Trabalhador',          lat: -25.4745,     lng: -49.2891,     raio: 150 },
   { id: 'p10', nome: 'Maternidade Marillac',             lat: -25.4180,     lng: -49.2700,     raio: 150 },
   { id: 'p11', nome: 'INC - Campo Comprido',             lat: -25.4431431,  lng: -49.3384167,  raio: 150 },
   { id: 'p12', nome: 'Hospital Fraturas - Alto da XV',   lat: -25.4265732,  lng: -49.252862,   raio: 150 },
@@ -555,21 +555,31 @@ if (!state) {
 } else {
   // Adiciona hospitais pré-definidos que ainda não existem no estado salvo
   PRESET_HOSPITALS.forEach(function(ph) {
-    var existe = state.hospitals.find(function(h) { return h.id === ph.id; });
-    if (!existe) state.hospitals.push(Object.assign({}, ph));
-    else { existe.nome = ph.nome; existe.lat = ph.lat; existe.lng = ph.lng; existe.raio = ph.raio; }
+    var existe = (state.hospitals || []).find(function(h) { return h.id === ph.id; });
+    if (!existe) {
+       if(!state.hospitals) state.hospitals = [];
+       state.hospitals.push(Object.assign({}, ph));
+    } else { 
+       existe.nome = ph.nome; existe.lat = ph.lat; existe.lng = ph.lng; existe.raio = ph.raio; 
+    }
   });
+  if (!state.machines || state.machines.length === 0) {
+     state.machines = [];
+     for (var i = 1; i <= TOTAL; i++) {
+       state.machines.push({ id: i, status: 'base', driver: null, hospital: null, since: null, liberada: false, liberadaTs: null, liberadaHosp: null });
+     }
+  }
   save();
 }
 
 function save() {
   localStorage.setItem('hm_state', JSON.stringify(state));
   if (typeof db !== 'undefined') {
-    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
+    // db.collection.catch(function(e){ console.error('Firebase save error:', e); });
   }
 }
 
-function loadFromFirebase() {
+function loadFromFirebase() { return; // Desativado
   if (typeof db !== 'undefined') {
     db.collection('settings').doc('current_state').get().then(function(doc) {
       if (doc.exists) {
@@ -1439,5 +1449,6 @@ loadFromFirebase();
 <!-- v1.1 -->
 </body>
 </html>
+
 
 
