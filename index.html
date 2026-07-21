@@ -3,7 +3,7 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Logística v2.2 - AZULÃO RAIZ</title>
+    <title>Logística v2.3 - AZULÃO FINAL</title>
     <style>
         body { font-family: sans-serif; background: #0056b3; margin: 0; padding-bottom: 80px; color: white; }
         header { background: #004494; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; border-bottom: 2px solid rgba(255,255,255,0.2); }
@@ -24,7 +24,8 @@
     </style>
 </head>
 <body>
-    <header>LOGÍSTICA v2.2 - AZULÃO</header>
+    <!-- v2.3 Cache Buster: 1721568500 -->
+    <header>LOGÍSTICA v2.3 - AZULÃO</header>
     <div id='view-maquinas' class='view active'>
         <div class='control-panel'>
             <div style='text-align:center; font-size: 14px;'>
@@ -55,7 +56,7 @@
         function render() {
             document.getElementById('grid-maquinas').innerHTML = state.machines.map(m => '<div class="card '+m.status+'" onclick="mudar('+m.id+')">'+m.id+'<br><small>'+(m.h||m.status.toUpperCase())+'</small></div>').join('');
             document.getElementById('lista-hospitais').innerHTML = state.hospitals.sort().map(h => '<div class="hosp-item"><span>'+h+'</span><button onclick="delHosp(\''+h+'\')" style="color:#dc3545; background:none; border:2px solid #dc3545; border-radius:5px; font-weight:bold; padding:8px 12px;">X</button></div>').join('');
-            localStorage.setItem('hm_v22_final', JSON.stringify(state));
+            localStorage.setItem('hm_v23_final', JSON.stringify(state));
         }
         function mudar(id) {
             const m = state.machines.find(x => x.id === id);
@@ -97,7 +98,7 @@
             document.getElementById('view-'+v).classList.add('active');
             if(v==='maquinas') document.getElementById('btn-m').classList.add('active'); else document.getElementById('btn-h').classList.add('active');
         }
-        const saved = localStorage.getItem('hm_v22_final'); if(saved) state = JSON.parse(saved); render();
+        const saved = localStorage.getItem('hm_v23_final'); if(saved) state = JSON.parse(saved); render();
     </script>
 </body>
 </html>
