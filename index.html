@@ -1100,7 +1100,6 @@ function abrirModalRota() {
   }
   document.getElementById('rotaSub').textContent =
     liberadas.length + ' máquina(s) aguardando recolha.';
-  // Carrega endereço base salvo
   var baseEnd = localStorage.getItem('baseEndereco') || '';
   document.getElementById('rotaBaseEnd').value = baseEnd;
   document.getElementById('modalRota').classList.add('open');
@@ -1115,141 +1114,72 @@ function toggleRotaPartida() {
 
 function abrirRota(app) {
   app = app || 'maps';
-  var tipo = document.getElementById('rotaPartidaTipo').value;
 
-  // Só inclui máquinas que já podem ser recolhidas AGORA:
-  // - atrasadas (prazo vencido) OU
-  // - liberadas sem prazo definido OU
-  // - liberadas com prazo já passado
+  // Coleta coordenadas dos hospitais com máquinas liberadas (por prazo)
   var agora = new Date();
   var liberadas = state.machines.filter(function(m) {
     if (!m.liberada) return false;
-    if (!m.liberadaPrazo) return true; // sem prazo = pode recolher
-    var prazo = parseHHMM(m.liberadaPrazo);
-    return prazo && agora >= prazo; // só se o prazo já chegou
+    if (!m.liberadaPrazo) return true;
+    var p = parseHHMM(m.liberadaPrazo);
+    return !p || agora >= p;
   });
-
-  // Se nenhuma passou do prazo ainda, usa todas as liberadas mesmo assim
   if (liberadas.length === 0) {
     liberadas = state.machines.filter(function(m) { return m.liberada; });
   }
-
   if (liberadas.length === 0) {
-    showToast('Nenhuma máquina aguardando recolha!');
-    return;
+    showToast('Nenhuma máquina liberada!'); return;
   }
 
-  // Agrupa por hospital e calcula prioridade:
-  // 0 = atrasada (prazo vencido), 1 = normal
-  // Dentro de cada grupo, ordena pelo prazo mais cedo primeiro
-  var hospMap = {};
+  // Monta lista de coordenadas únicas por hospital
+  var coords = [];
+  var vistos = {};
   liberadas.forEach(function(m) {
     var hid = m.liberadaHosp || m.hospital;
-    if (!hid) return;
-    if (!hospMap[hid]) {
-      var h = state.hospitals.find(function(x) { return x.id == hid; });
-      if (!h) return;
-      hospMap[hid] = { h: h, vencida: false, prazoMin: 9999 };
-    }
-    if (prazoVencido(m)) hospMap[hid].vencida = true;
-    if (m.liberadaPrazo) {
-      var p = parseHHMM(m.liberadaPrazo);
-      if (p !== null && p < hospMap[hid].prazoMin) hospMap[hid].prazoMin = p;
-    }
+    if (!hid || vistos[hid]) return;
+    var h = state.hospitals.find(function(x) { return x.id == hid; });
+    if (!h) return;
+    vistos[hid] = true;
+    coords.push(h.lat.toFixed(6) + ',' + h.lng.toFixed(6));
   });
 
-  // Ordena: atrasadas primeiro, depois pelo prazo mais cedo
-  var hosps = Object.values(hospMap).sort(function(a, b) {
-    if (a.vencida !== b.vencida) return a.vencida ? -1 : 1;
-    return a.prazoMin - b.prazoMin;
-  });
-
-  var waypoints = hosps.map(function(item) {
-    return item.h.lat + ',' + item.h.lng;
-  });
-
-  if (waypoints.length === 0) {
-    showToast('Hospitais não informados nas liberações!');
-    return;
+  if (coords.length === 0) {
+    showToast('Nenhum hospital vinculado às máquinas liberadas!'); return;
   }
 
-  if (tipo === 'base') {
-    var end = document.getElementById('rotaBaseEnd').value.trim();
-    if (!end) { showToast('Informe o endereço da base!'); return; }
-    localStorage.setItem('baseEndereco', end);
-    montarUrlRota(encodeURIComponent(end), waypoints, app);
+  var tipo = document.getElementById('rotaPartidaTipo').value;
+
+  if (tipo === 'gps') {
+    if (!navigator.geolocation) { showToast('GPS indisponível!'); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var orig = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
+        _abrirMapa(app, orig, coords);
+      },
+      function() { showToast('Não foi possível obter GPS.'); }
+    );
   } else if (tipo === 'manual') {
-    var endM = document.getElementById('rotaManualEnd').value.trim();
-    if (!endM) { showToast('Informe o endereço de partida!'); return; }
-    montarUrlRota(encodeURIComponent(endM), waypoints, app);
+    var end = document.getElementById('rotaManualEnd').value.trim();
+    if (!end) { showToast('Digite o endereço de partida!'); return; }
+    _abrirMapa(app, encodeURIComponent(end), coords);
   } else {
-    // GPS
-    if (!navigator.geolocation) { showToast('GPS não disponível!'); return; }
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      var origem = pos.coords.latitude + ',' + pos.coords.longitude;
-      montarUrlRota(origem, waypoints, app);
-    }, function() {
-      showToast('Não foi possível obter sua localização.');
-    });
+    var base = document.getElementById('rotaBaseEnd').value.trim();
+    if (!base) { showToast('Digite o endereço da base!'); return; }
+    localStorage.setItem('baseEndereco', base);
+    _abrirMapa(app, encodeURIComponent(base), coords);
   }
 }
 
-function montarUrlRota(origem, waypoints, app) {
-  app = app || 'maps';
-  // Se origem é endereço (texto), não tenta otimizar pelo vizinho mais próximo
-  // A ordem já vem priorizada por prazo de abrirRota()
-  var origemParts = origem.split(',');
-  var origemEhCoord = origemParts.length === 2 &&
-    !isNaN(parseFloat(origemParts[0])) && !isNaN(parseFloat(origemParts[1]));
-
-  var ordered;
-  if (origemEhCoord) {
-    // Otimiza pelo vizinho mais próximo a partir das coordenadas
-    var pts = waypoints.map(function(w) {
-      var p = w.split(',');
-      return { lat: parseFloat(p[0]), lng: parseFloat(p[1]), orig: w };
-    });
-    var cur = { lat: parseFloat(origemParts[0]), lng: parseFloat(origemParts[1]) };
-    var remaining = pts.slice();
-    ordered = [];
-    while (remaining.length > 0) {
-      var best = 0;
-      for (var i = 1; i < remaining.length; i++) {
-        var dBest = Math.pow(cur.lat-remaining[best].lat,2)+Math.pow(cur.lng-remaining[best].lng,2);
-        var dI    = Math.pow(cur.lat-remaining[i].lat,2)+Math.pow(cur.lng-remaining[i].lng,2);
-        if (dI < dBest) best = i;
-      }
-      ordered.push(remaining[best].orig);
-      cur = remaining[best];
-      remaining.splice(best, 1);
-    }
-  } else {
-    // Endereço texto: mantém ordem por prazo
-    ordered = waypoints.slice();
-  }
-
-  var destino = ordered[ordered.length - 1];
-  var wps = ordered.slice(0, -1);
-
+function _abrirMapa(app, origem, coords) {
+  closeModal('modalRota');
   var url;
   if (app === 'waze') {
-    var primeiro = ordered[0];
-    var partes = primeiro.split(',');
-    url = 'https://ul.waze.com/ul?ll=' + partes[0] + '%2C' + partes[1] + '&navigate=yes&zoom=17';
-    if (ordered.length > 1) showToast('Waze: ' + ordered.length + ' paradas. Abrirá uma por vez.');
+    var p = coords[0].split(',');
+    url = 'https://ul.waze.com/ul?ll=' + p[0] + '%2C' + p[1] + '&navigate=yes';
+    if (coords.length > 1) showToast('Waze: ' + coords.length + ' paradas, abrindo a 1ª');
   } else {
-    // Formato simples: google.com/maps/dir/origem/p1/p2/destino
-    url = 'https://www.google.com/maps/dir/' + origem + '/' + ordered.join('/');
+    url = 'https://www.google.com/maps/dir/' + origem + '/' + coords.join('/');
   }
-
-  closeModal('modalRota');
-  // Mostra URL na tela para debug
-  var dbg = document.createElement('div');
-  dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;padding:20px;overflow:auto;font-size:12px;word-break:break-all';
-  dbg.innerHTML = '<b>URL gerada:</b><br><br>' + url + 
-    '<br><br><a href="' + url + '" style="color:blue;font-size:16px">👉 Toque aqui para abrir</a>' +
-    '<br><br><button onclick="this.parentNode.remove()" style="padding:10px 20px;font-size:16px">Fechar</button>';
-  document.body.appendChild(dbg);
+  window.location.href = url;
 }
 
 // ── SERVICE WORKER ──
