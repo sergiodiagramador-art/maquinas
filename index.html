@@ -562,7 +562,7 @@ if (!state) {
 function save() {
   localStorage.setItem('hm_state', JSON.stringify(state));
   if (typeof db !== 'undefined') {
-    // db.collection.catch(function(e){ console.error('Firebase save error:', e); });
+    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
   }
 }
 
