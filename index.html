@@ -404,7 +404,7 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
     </label>
   </div>
 
-  <button class="btn btn-red" onclick="if(confirm('Limpar tudo?')){localStorage.clear();location.reload();}" style="margin-top:20px">🔄 RESETAR CACHE</button><div id="fechHistList"></div>
+  <div id="fechHistList"></div>
 </div>
 
 <!-- Bottom Nav -->
@@ -518,15 +518,15 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 // ── STATE ──
 var TOTAL = 18;
 var PRESET_HOSPITALS = [
-  { id: 'p1',  nome: 'Hospital Erasto Gaertner',         lat: -25.4535814,  lng: -49.2388060,  raio: 60 },
+  { id: 'p1',  nome: 'Hospital Erasto Gaertner',        lat: -25.4535814,  lng: -49.2388060,  raio: 60 },
   { id: 'p2',  nome: 'Hospital Erastinho',               lat: -25.4528189,  lng: -49.2386190,  raio: 60 },
   { id: 'p3',  nome: 'Hospital Pilar',                   lat: -25.4155502,  lng: -49.2789642,  raio: 150 },
-  { id: 'p4',  nome: 'Hospital N. Sra. das Graças',      lat: -25.4192,     lng: -49.2801,     raio: 150 },
-  { id: 'p5',  nome: 'Hospital Marcelino Champagnat',    lat: -25.4358,     lng: -49.2392,     raio: 150 },
-  { id: 'p6',  nome: 'Hospital INC Ecoville',            lat: -25.4419,     lng: -49.3495,     raio: 150 },
-  { id: 'p7',  nome: 'Hospital Cruz Vermelha',           lat: -25.4347,     lng: -49.2885,     raio: 150 },
-  { id: 'p8',  nome: 'Hospital Santa Casa',              lat: -25.4339,     lng: -49.2736,     raio: 150 },
-  { id: 'p9',  nome: 'Hospital do Trabalhador',          lat: -25.4745,     lng: -49.2891,     raio: 150 },
+  { id: 'p4',  nome: 'Centro Hospitalar Nossa Saúde',    lat: -25.4202592,  lng: -49.2921622,  raio: 150 },
+  { id: 'p5',  nome: 'Hospital Nossa Senhora das Graças',lat: -25.4210967,  lng: -49.290718,   raio: 150 },
+  { id: 'p6',  nome: 'Hospital São Marcelino Champagnat',lat: -25.4360463,  lng: -49.2463727,  raio: 150 },
+  { id: 'p7',  nome: 'Hospital Ônix Batel',              lat: -25.4418182,  lng: -49.2980751,  raio: 150 },
+  { id: 'p8',  nome: 'Hospital Ônix Mateus Leme',        lat: -25.3972,     lng: -49.3110,     raio: 150 },
+  { id: 'p9',  nome: 'Maternidade do Trabalhador',       lat: -25.4350,     lng: -49.2620,     raio: 150 },
   { id: 'p10', nome: 'Maternidade Marillac',             lat: -25.4180,     lng: -49.2700,     raio: 150 },
   { id: 'p11', nome: 'INC - Campo Comprido',             lat: -25.4431431,  lng: -49.3384167,  raio: 150 },
   { id: 'p12', nome: 'Hospital Fraturas - Alto da XV',   lat: -25.4265732,  lng: -49.252862,   raio: 150 },
@@ -535,7 +535,7 @@ var PRESET_HOSPITALS = [
   { id: 'p15', nome: 'Yoshimi',                          lat: -25.4064179,  lng: -49.1976728,  raio: 150 }
 ];
 
-var state = JSON.parse(localStorage.getItem('maquinas_stable_v1') || 'null');
+var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
 if (!state) {
   state = {
     machines: [],
@@ -560,13 +560,13 @@ if (!state) {
 }
 
 function save() {
-  localStorage.setItem('maquinas_stable_v1', JSON.stringify(state));
+  localStorage.setItem('hm_state', JSON.stringify(state));
   if (typeof db !== 'undefined') {
-    // db.collection.catch(function(e){ console.error('Firebase save error:', e); });
+    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
   }
 }
 
-function loadFromFirebase() { return; // Desativado
+function loadFromFirebase() {
   if (typeof db !== 'undefined') {
     db.collection('settings').doc('current_state').get().then(function(doc) {
       if (doc.exists) {
