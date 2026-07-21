@@ -1386,7 +1386,8 @@ function cancelarLiberacao() {
 function exportarBackup() {
   var dados = JSON.stringify(state);
   var html = document.documentElement.outerHTML;
-  // Injeta os dados como script inline antes do </body>
+  // Injeta os dados como script inline antes do <!-- v1.1 -->
+</body>
   var backup = html.replace(
     /\/\/ ── INIT ──/,
     '// ── RESTORE BACKUP ──\ntry { var _bk = ' + dados.replace(/\\/g,'\\\\').replace(/`/g,'\\`') + '; localStorage.setItem("maqState", JSON.stringify(_bk)); } catch(e){}\n// ── INIT ──'
@@ -1432,5 +1433,6 @@ renderFechGrid();
 atualizarBannerVencidas();
 loadFromFirebase();
 </script>
+<!-- v1.1 -->
 </body>
 </html>
