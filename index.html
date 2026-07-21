@@ -3,10 +3,11 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>SOS RIM 3.0 - RECONSTRUÍDO</title>
+    <title>SOS RIM 3.6</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; margin: 0; color: #333; text-align: center; }
         header { background: #004494; color: white; padding: 15px; font-weight: bold; font-size: 20px; }
+        .version-tag { font-size: 10px; background: #ffcc00; color: #000; padding: 2px 5px; border-radius: 3px; }
         .driver-select { background: white; margin: 10px; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; padding-bottom: 120px; }
@@ -21,7 +22,7 @@
     </style>
 </head>
 <body>
-    <header>🏥 Controle de Máquinas</header>
+    <header>🏥 Controle de Máquinas <span class='version-tag'>v3.6</span></header>
     <div class='driver-select'>
         <label style='font-size:12px; font-weight:bold;'>Selecione o motorista</label>
         <select id='driver' onchange='saveDriver()'>
@@ -33,7 +34,7 @@
     <nav>
         <div class='nav-item'>🚗<br>Motorista</div>
         <div class='nav-item'>📊<br>Painel</div>
-        <div class='nav-item'>📍<br>Hospitais</div>
+        <div class='nav-item' onclick='alert("Toque em uma máquina para mudar o hospital")'>📍<br>Hospitais</div>
         <div class='nav-item'>📋<br>Histórico</div>
         <div class='nav-item'>🔒<br>Fechar dia</div>
     </nav>
@@ -56,7 +57,7 @@
                 return '<div class="m '+cls+'" onclick="tapM('+m.id+')">'+num+'<small>'+status+'</small></div>';
             }).join('');
             document.getElementById('driver').value = state.d;
-            localStorage.setItem('sosrim_final_v3', JSON.stringify(state));
+            localStorage.setItem('sosrim_final_v36', JSON.stringify(state));
         }
         function tapM(id) { activeM = id; document.getElementById('modal-hosp').style.display = 'block'; }
         function applyDest(h) {
@@ -69,7 +70,7 @@
         document.getElementById('hosp-list').innerHTML = HOSP.map(h => '<div class="opt" onclick="applyDest(\''+h+'\')">'+h+'</div>').join('');
         function saveDriver() { state.d = document.getElementById('driver').value; render(); }
         function closeM(id) { document.getElementById(id).style.display = 'none'; }
-        const saved = localStorage.getItem('sosrim_final_v3'); if(saved) state = JSON.parse(saved); render();
+        const saved = localStorage.getItem('sosrim_final_v36'); if(saved) state = JSON.parse(saved); render();
     </script>
 </body>
 </html>
