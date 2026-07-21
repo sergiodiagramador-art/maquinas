@@ -3,75 +3,73 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>Logística v3.4 - AZULÃO PRO</title>
+    <title>AZULÃO NEXT v1.0</title>
     <style>
-        body { font-family: sans-serif; background: #0056b3; margin: 0; color: white; text-align: center; overflow: hidden; }
-        header { background: #004494; padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 2px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
-        .control-bar { background: #f8f9fa; padding: 12px; display: flex; gap: 10px; justify-content: center; border-bottom: 1px solid #ddd; }
-        .btn-lote { flex: 1; padding: 15px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 13px; text-transform: uppercase; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; height: 75vh; overflow-y: auto; }
-        .card { background: #28a745; color: white; padding: 25px 2px; border-radius: 12px; font-weight: bold; font-size: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.3); }
-        .card.rua { background: #fd7e14; }
-        .card.hosp { background: white; color: #0056b3; border: 3px solid #0056b3; }
-        .card.manut { background: #dc3545; }
-        .card small { display: block; font-size: 11px; margin-top: 6px; font-weight: normal; text-transform: uppercase; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; color: #333; z-index: 9999; overflow-y: auto; }
-        .modal-h { background: #004494; color: white; padding: 20px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; }
-        .opt { padding: 20px; border-bottom: 1px solid #ddd; font-size: 18px; font-weight: bold; background: white; color: #333; }
-        .qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
-        .qty-btn { padding: 20px; background: #0056b3; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 20px; }
+        body { font-family: sans-serif; background: #003366; margin: 0; color: white; text-align: center; }
+        header { background: #002244; padding: 15px; font-weight: bold; border-bottom: 3px solid #ffcc00; font-size: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        .m { background: #28a745; padding: 25px 2px; border-radius: 8px; font-weight: bold; font-size: 24px; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .m.rua { background: #fd7e14; }
+        .m.hosp { background: #ffffff; color: #003366; border: 3px solid #003366; }
+        .m.manut { background: #dc3545; }
+        .m small { display: block; font-size: 10px; margin-top: 5px; text-transform: uppercase; font-weight: normal; }
+        .controls { background: #f8f9fa; padding: 20px; color: #333; position: sticky; bottom: 0; border-top: 2px solid #ddd; }
+        select { width: 100%; padding: 15px; font-size: 16px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <header>
-        <span>v3.4 AZULÃO</span>
-        <span id='disp-driver' onclick='openM("modal-driver")' style='background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:6px; font-size:13px;'>👤 Sérgio</span>
-    </header>
-    <div class='control-bar'>
-        <button class='btn-lote' style='background:#fd7e14;' onclick='openLote("retirar")'>⬆️ Retirar Lote</button>
-        <button class='btn-lote' style='background:#0056b3;' onclick='openLote("inserir")'>⬇️ Inserir Lote</button>
-    </div>
+    <header>AZULÃO NEXT v1.0</header>
+    
     <div id='grid' class='grid'></div>
-    <div id='modal-driver' class='modal'>
-        <div class='modal-h'>MOTORISTA <span onclick='closeM("modal-driver")'>✖</span></div>
-        <div class='opt' onclick='setDriver("Sérgio")'>Sérgio</div>
-        <div class='opt' onclick='setDriver("Jairo")'>Jairo</div>
-        <div class='opt' onclick='setDriver("Aderildo")'>Aderildo</div>
+
+    <div class='controls'>
+        <p style='margin:0 0 10px 0; font-weight:bold;'>ESCOLHA O HOSPITAL ANTES DE CLICAR:</p>
+        <select id='h-select'>
+            <option value=''>-- SELECIONE AQUI --</option>
+            <option>Erasto Gaertner</option><option>Erastinho</option><option>Marcelino</option>
+            <option>Nossa Saúde</option><option>Nações</option><option>Pilar</option>
+            <option>Trabalhador</option><option>INC Ecoville</option><option>Santa Cruz</option>
+            <option>Sugisawa</option><option>Clínicas</option><option>Evangélico</option>
+            <option>São Vicente</option><option>IPO</option><option>Vita Batel</option>
+        </select>
     </div>
-    <div id='modal-qty' class='modal'>
-        <div class='modal-h'>QUANTIDADE <span onclick='closeM("modal-qty")'>✖</span></div>
-        <div class='qty-grid' id='qty-options'></div>
-    </div>
-    <div id='modal-dest' class='modal'>
-        <div class='modal-h'>DESTINO <span onclick='closeM("modal-dest")'>✖</span></div>
-        <div class='opt' style='background:#fd7e14; color:white;' onclick='setDest("RUA", "rua")'>MÁQUINA NA RUA</div>
-        <div id='hosp-options'></div>
-    </div>
+
     <script>
-        const HOSPITAIS = ['Nossa Saúde', 'Nações', 'Erasto', 'Erastinho', 'Pilar', 'Marcelino', 'Trabalhador', 'INC', 'Santa Cruz', 'Sugisawa', 'Clínicas', 'Evangélico', 'São Vicente', 'IPO', 'Vita'].sort();
-        const STATES = ['base', 'rua', 'hosp', 'manut'];
-        let state = { m: Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''})), d: 'Sérgio' };
-        let bType = '', bQty = 0;
+        let machines = Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''}));
+        const states = ['base', 'rua', 'hosp', 'manut'];
+
         function render() {
-            document.getElementById('grid').innerHTML = state.m.map(m => '<div class="card '+m.s+'" onclick="tapM('+m.id+')">'+m.id+'<br><small>'+(m.h||m.s.toUpperCase())+'</small></div>').join('');
-            document.getElementById('disp-driver').innerText = '👤 ' + state.d;
-            localStorage.setItem('hm_v34_final', JSON.stringify(state));
+            const container = document.getElementById('grid');
+            container.innerHTML = machines.map(m => {
+                let label = m.h || m.s.toUpperCase();
+                return '<div class="m '+m.s+'" onclick="cycle('+m.id+')">'+m.id+'<small>'+label+'</small></div>';
+            }).join('');
+            localStorage.setItem('azulao_next_v1', JSON.stringify(machines));
         }
-        function tapM(id) {
-            const m = state.m.find(x => x.id === id);
-            let next = STATES[(STATES.indexOf(m.s) + 1) % STATES.length];
-            if(next === 'hosp') { bType = 'single'; bQty = id; openDest(); }
-            else { m.s = next; m.h = ''; render(); }
+
+        function cycle(id) {
+            let m = machines.find(x => x.id === id);
+            let currentIdx = states.indexOf(m.s);
+            let nextState = states[(currentIdx + 1) % states.length];
+            
+            if(nextState === 'hosp') {
+                let h = document.getElementById('h-select').value;
+                if(!h) {
+                    alert('POR FAVOR, SELECIONE O HOSPITAL NA LISTA ABAIXO PRIMEIRO!');
+                    return;
+                }
+                m.h = h;
+            } else {
+                m.h = '';
+            }
+            
+            m.s = nextState;
+            render();
         }
-        function setDriver(n) { state.d=n; closeM('modal-driver'); render(); }
-        function openLote(t) { bType = t; const c = document.getElementById('qty-options'); c.innerHTML = [1,2,3,4,5,6,10,18].map(n => '<button class="qty-btn" onclick="setQty('+n+')">'+n+'</button>').join(''); openM('modal-qty'); }
-        function setQty(n) { bQty = n; closeM('modal-qty'); if(bType === 'retirar') openDest(); else execLote('base', ''); }
-        function openDest() { const c = document.getElementById('hosp-options'); c.innerHTML = HOSPITAIS.map(h => '<div class="opt" onclick="setDest(\''+h+'\', \'hosp\')">'+h+'</div>').join(''); openM('modal-dest'); }
-        function setDest(h, s) { if(bType === 'single') { const m = state.m.find(x => x.id === bQty); m.s = s; m.h = (s==='hosp'?h:''); } else { execLote(s, h); } closeM('modal-dest'); render(); }
-        function execLote(s, h) { let c = 0; state.m.forEach(m => { if(bType === 'retirar' && m.s === 'base' && c < bQty) { m.s = s; m.h = (s==='hosp'?h:''); c++; } else if(bType === 'inserir' && m.s !== 'base' && c < bQty) { m.s = 'base'; m.h = ''; c++; } }); render(); }
-        function openM(id) { document.getElementById(id).style.display='block'; }
-        function closeM(id) { document.getElementById(id).style.display='none'; }
-        const saved = localStorage.getItem('hm_v34_final'); if(saved) state = JSON.parse(saved); render();
+
+        const saved = localStorage.getItem('azulao_next_v1');
+        if(saved) machines = JSON.parse(saved);
+        render();
     </script>
 </body>
 </html>
