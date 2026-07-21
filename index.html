@@ -1179,7 +1179,20 @@ function _abrirMapa(app, origem, coords) {
   } else {
     url = 'https://www.google.com/maps/dir/' + origem + '/' + coords.join('/');
   }
-  window.location.href = url;
+  // Abre modal com link direto para o usuário tocar
+  var dbg = document.createElement('div');
+  dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px';
+  var a = document.createElement('a');
+  a.href = url;
+  a.textContent = app === 'waze' ? '🚕 Abrir no Waze' : '🗺️ Abrir no Google Maps';
+  a.style.cssText = 'display:block;background:#1a73e8;color:white;padding:18px 32px;border-radius:14px;font-size:18px;font-weight:700;text-decoration:none;text-align:center';
+  var btn = document.createElement('button');
+  btn.textContent = 'Fechar';
+  btn.style.cssText = 'padding:12px 32px;font-size:16px;border-radius:10px;border:none;background:#eee;color:#333';
+  btn.onclick = function() { dbg.remove(); };
+  dbg.appendChild(a);
+  dbg.appendChild(btn);
+  document.body.appendChild(dbg);
 }
 
 // ── SERVICE WORKER ──
