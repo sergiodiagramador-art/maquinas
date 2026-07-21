@@ -535,7 +535,7 @@ var PRESET_HOSPITALS = [
   { id: 'p15', nome: 'Yoshimi',                          lat: -25.4064179,  lng: -49.1976728,  raio: 150 }
 ];
 
-var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
+var state = JSON.parse(localStorage.getItem('hm_state_v3') || 'null');
 if (!state) {
   state = {
     machines: [],
@@ -560,7 +560,7 @@ if (!state) {
 }
 
 function save() {
-  localStorage.setItem('hm_state', JSON.stringify(state));
+  localStorage.setItem('hm_state_v3', JSON.stringify(state));
   if (typeof db !== 'undefined') {
     db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
   }
