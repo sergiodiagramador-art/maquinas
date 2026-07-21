@@ -1233,20 +1233,15 @@ function montarUrlRota(origem, waypoints, app) {
 
   var url;
   if (app === 'waze') {
-    // Waze só aceita 1 destino — abre o primeiro da lista
-    // Os outros ficam salvos para abrir em sequência
     var primeiro = ordered[0];
     var partes = primeiro.split(',');
-    url = 'https://waze.com/ul?ll=' + partes[0] + '%2C' + partes[1] + '&navigate=yes';
-    if (ordered.length > 1) {
-      showToast('Waze abrirá hospital a hospital. Total: ' + ordered.length);
-    }
+    url = 'https://ul.waze.com/ul?ll=' + partes[0] + '%2C' + partes[1] + '&navigate=yes&zoom=17';
+    if (ordered.length > 1) showToast('Waze: ' + ordered.length + ' paradas. Abrirá uma por vez.');
   } else {
-    url = 'https://www.google.com/maps/dir/?api=1' +
-      '&origin=' + origem +
-      '&destination=' + destino +
-      (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
-      '&travelmode=driving';
+    // Usa maps.google.com.br (versão web, não depende do app instalado)
+    url = 'https://maps.google.com.br/maps?dirflg=d' +
+      '&saddr=' + origem +
+      '&daddr=' + ordered.join('/to:');
   }
 
   closeModal('modalRota');
