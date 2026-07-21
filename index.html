@@ -3,74 +3,49 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>SOS RIM 3.7</title>
+    <title>SOS RIM 3.8</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; color: #333; text-align: center; }
-        header { background: #004494; color: white; padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 4px solid #ffcc00; }
-        .v-tag { font-size: 10px; background: #fff; color: #004494; padding: 2px 5px; border-radius: 3px; vertical-align: middle; }
-        .box { background: white; margin: 10px; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; padding-bottom: 120px; }
-        .m { background: #28a745; color: white; padding: 25px 2px; border-radius: 12px; font-weight: bold; font-size: 22px; border: 2px solid white; }
-        .m.fora { background: #fd7e14; }
-        .m small { display: block; font-size: 10px; margin-top: 5px; text-transform: uppercase; }
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #ddd; padding: 12px 0; z-index: 100; }
-        .nav-item { flex: 1; font-size: 11px; color: #444; font-weight: bold; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 200; overflow-y: auto; }
-        .modal-h { background: #004494; color: white; padding: 20px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; position: sticky; top: 0; }
-        .opt { padding: 20px; border-bottom: 1px solid #eee; text-align: left; font-size: 18px; font-weight: bold; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; color: #333; text-align: center; }
+        header { background: #004494; color: white; padding: 10px; font-weight: bold; margin: -10px -10px 10px -10px; border-bottom: 3px solid #ffcc00; }
+        .list { display: flex; flex-direction: column; gap: 8px; }
+        .row { background: white; border: 1px solid #ddd; border-radius: 8px; display: flex; align-items: center; padding: 10px; }
+        .num { background: #004494; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; }
+        .info { flex-grow: 1; text-align: left; }
+        .name { font-weight: bold; font-size: 16px; }
+        .status { font-size: 12px; color: #666; }
+        .btn { padding: 8px 15px; border-radius: 5px; border: none; font-weight: bold; }
+        .b-base { background: #28a745; color: white; }
+        .b-hosp { background: #fd7e14; color: white; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
+        .opt { padding: 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <header>🏥 SOS RIM <span class='v-tag'>v3.7</span></header>
-    <div class='box'>
-        <label style='font-size:12px; font-weight:bold;'>Motorista</label>
-        <select id='driver' onchange='saveD()'>
-            <option value=''>— Selecionar —</option>
-            <option>Sérgio</option><option>Jairo</option><option>Aderildo</option>
-        </select>
-    </div>
-    <div id='grid' class='grid'></div>
-    <nav>
-        <div class='nav-item'>🚗<br>Motorista</div>
-        <div class='nav-item'>📊<br>Painel</div>
-        <div class='nav-item'>📍<br>Hospitais</div>
-        <div class='nav-item'>📋<br>Histórico</div>
-        <div class='nav-item'>🔒<br>Fechar</div>
-    </nav>
-    <div id='modal-hosp' class='modal'>
-        <div class='modal-h'>DESTINO <span onclick='closeM()'>✖</span></div>
-        <div class='opt' style='background:#fd7e14; color:white;' onclick='apply("FORA")'>RUA (FORA)</div>
-        <div class='opt' style='background:#28a745; color:white;' onclick='apply("BASE")'>VOLTAR BASE</div>
-        <div id='h-list'></div>
+    <header>SOS RIM v3.8 - ESTÁVEL</header>
+    <div class='list' id='list'></div>
+    <div id='modal'>
+        <div style='background:#004494; color:white; padding:20px; font-weight:bold; display:flex; justify-content:space-between;'>SELECIONE <span onclick='closeM()'>✖</span></div>
+        <div class='opt' style='background:#28a745; color:white;' onclick='setH("BASE")'>VOLTAR PARA BASE</div>
+        <div class='opt' style='background:#fd7e14; color:white;' onclick='setH("RUA (FORA)")'>RUA (FORA)</div>
+        <div id='h-opts'></div>
     </div>
     <script>
         const HOSP = ["Cl\u00ednicas", "Erastinho", "Erasto", "Evang\u00e9lico", "INC", "IPO", "Marcelino", "Na\u00e7\u00f5es", "Nossa Sa\u00fade", "Pilar", "Santa Cruz", "Sugisawa", "S\u00e3o Vicente", "Vita", "Yoshimi"];
-        let state = { m: Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''})), d: '' };
+        let state = Array.from({length: 18}, (_, i) => ({id: i+1, h: 'BASE'}));
         let active = null;
         function render() {
-            const g = document.getElementById('grid');
-            g.innerHTML = state.m.map(m => {
-                let status = m.h || (m.s === 'base' ? 'BASE' : 'FORA');
-                let cls = (m.s === 'base' ? '' : 'fora');
-                let num = m.id < 10 ? '0' + m.id : m.id;
-                return '<div class="m '+cls+'" onclick="tapM('+m.id+')">'+num+'<small>'+status+'</small></div>';
+            document.getElementById('list').innerHTML = state.map(m => {
+                let cls = m.h === 'BASE' ? 'b-base' : 'b-hosp';
+                return '<div class="row"><div class="num">'+m.id+'</div><div class="info"><div class="name">Máquina '+m.id+'</div><div class="status">📍 '+m.h+'</div></div><button class="btn '+cls+'" onclick="openM('+m.id+')">MUDAR</button></div>';
             }).join('');
-            document.getElementById('driver').value = state.d;
-            localStorage.setItem('sos_v37_ok', JSON.stringify(state));
+            localStorage.setItem('sos_v38', JSON.stringify(state));
         }
-        function tapM(id) { active = id; document.getElementById('modal-hosp').style.display = 'block'; }
-        function closeM() { document.getElementById('modal-hosp').style.display = 'none'; }
-        function apply(h) {
-            let m = state.m.find(x => x.id === active);
-            if(h === 'FORA') { m.s = 'fora'; m.h = ''; }
-            else if(h === 'BASE') { m.s = 'base'; m.h = ''; }
-            else { m.s = 'hosp'; m.h = h; }
-            closeM(); render();
-        }
-        document.getElementById('h-list').innerHTML = HOSP.map(h => '<div class="opt" onclick="apply(\''+h+'\')">'+h+'</div>').join('');
-        function saveD() { state.d = document.getElementById('driver').value; render(); }
-        const s = localStorage.getItem('sos_v37_ok'); if(s) state = JSON.parse(s); render();
+        function openM(id) { active = id; document.getElementById('modal').style.display = 'block'; }
+        function closeM() { document.getElementById('modal').style.display = 'none'; }
+        function setH(h) { state[active-1].h = h; closeM(); render(); }
+        document.getElementById('h-opts').innerHTML = HOSP.map(h => '<div class="opt" onclick="apply(\''+h+'\')">'+h+'</div>').join('');
+        function apply(h) { setH(h); }
+        const s = localStorage.getItem('sos_v38'); if(s) state = JSON.parse(s); render();
     </script>
 </body>
 </html>
