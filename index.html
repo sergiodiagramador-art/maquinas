@@ -187,10 +187,26 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100
   background: #fffde7; border: 1.5px solid #f9ab00; border-radius: 10px;
   padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
 }
+.alerta-lib.vencida {
+  background: #ff1a1a; border-color: #b71c1c;
+  animation: blink-vencida 0.8s infinite;
+}
+.alerta-lib.vencida .anum { color: white; }
+.alerta-lib.vencida .atitle { color: white; font-size: 15px; }
+.alerta-lib.vencida .adet { color: rgba(255,255,255,0.85); }
 .alerta-lib .anum { font-size: 20px; font-weight: 700; color: #333; min-width: 30px; }
 .alerta-lib .ainfo { flex: 1; }
 .alerta-lib .atitle { font-size: 13px; font-weight: 700; color: #e65100; }
 .alerta-lib .adet { font-size: 11px; color: #888; margin-top: 2px; }
+
+#bannerVencidas {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #b71c1c; color: white; text-align: center;
+  padding: 10px 16px; font-size: 14px; font-weight: 700;
+  animation: blink-banner 0.8s infinite;
+  cursor: pointer;
+}
+@keyframes blink-banner { 0%,100% { background: #b71c1c; } 50% { background: #ef5350; } }
 .btn-yellow { background: #f9ab00; color: white; }
 
 input[type=text], textarea {
@@ -264,6 +280,7 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 </style>
 </head>
 <body>
+<div id="bannerVencidas" onclick="switchView('painel')">🚨 RECOLHA ATRASADA! Toque para ver</div>
 
 <div class="header">
   <div class="h1">🏥 Controle de Máquinas</div>
@@ -1264,6 +1281,19 @@ function isMaqVencida(m) {
   return new Date() > prazo;
 }
 
+function atualizarBannerVencidas() {
+  var vencidas = state.machines.filter(function(m) { return m.liberada && prazoVencido(m); });
+  var banner = document.getElementById('bannerVencidas');
+  if (vencidas.length > 0) {
+    banner.textContent = '🚨 ' + vencidas.length + ' RECOLHA(S) ATRASADA(S)! Toque para ver';
+    banner.style.display = 'block';
+    document.body.style.paddingTop = '44px';
+  } else {
+    banner.style.display = 'none';
+    document.body.style.paddingTop = '0';
+  }
+}
+
 function checkPrazos() {
   var tinha = false;
   state.machines.forEach(function(m) {
@@ -1274,6 +1304,7 @@ function checkPrazos() {
     renderPanel();
     if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
   }
+  atualizarBannerVencidas();
 }
 setInterval(checkPrazos, 30000); // verifica a cada 30 seg
 
@@ -1422,6 +1453,7 @@ renderGrid();
 renderPanel();
 renderHistorico();
 renderFechGrid();
+atualizarBannerVencidas();
 </script>
 </body>
 </html>
