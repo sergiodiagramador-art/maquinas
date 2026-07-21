@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+  console.log('RESET FORÇADO ATIVADO');
+  if (localStorage.getItem('hm_final_v100')) {
+      localStorage.removeItem('hm_final_v100');
+  }
+  localStorage.clear(); 
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1565c0">
@@ -280,14 +288,6 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 </style>
 </head>
 <body>
-<script>
-  // LIMPEZA FORÇADA DE VERSÕES ANTIGAS QUE TRAVAM
-  if (!localStorage.getItem('maquinas_curitiba_v77')) {
-    localStorage.clear();
-    console.log('Cache antigo limpo');
-  }
-</script>
-
 <div id="bannerVencidas" onclick="switchView('painel')">🚨 RECOLHA ATRASADA! Toque para ver</div>
 
 <div class="header">
@@ -520,8 +520,8 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
     appId: "1:483781840617:web:02a3d62b3e79f5b001ea78",
     measurementId: "G-HW70F0DEEH"
   };
-  // firebase.initializeApp(firebaseConfig);
-  const db = null; // FIREBASE OFF
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
 // ── STATE ──
 var TOTAL = 18;
@@ -543,7 +543,7 @@ var PRESET_HOSPITALS = [
   { id: 'p15', nome: 'Yoshimi',                          lat: -25.4064179,  lng: -49.1976728,  raio: 150 }
 ];
 
-var state = JSON.parse(localStorage.getItem('maquinas_curitiba_v77') || 'null');
+var state = JSON.parse(localStorage.getItem('hm_final_v100') || 'null');
 if (!state) {
   state = {
     machines: [],
@@ -568,13 +568,13 @@ if (!state) {
 }
 
 function save() {
-  localStorage.setItem('maquinas_curitiba_v77', JSON.stringify(state));
+  localStorage.setItem('hm_final_v100', JSON.stringify(state));
   if (typeof db !== 'undefined') {
-    // db.collection.catch(function(e){ console.error('Firebase save error:', e); });
+    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
   }
 }
 
-function loadFromFirebase() { return; // Desativado
+function loadFromFirebase() {
   if (typeof db !== 'undefined') {
     db.collection('settings').doc('current_state').get().then(function(doc) {
       if (doc.exists) {
