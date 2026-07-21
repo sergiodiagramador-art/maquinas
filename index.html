@@ -4,200 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOS RIM - Logística</title>
-    <style>
-        :root { --primary: #1a73e8; --danger: #d93025; --success: #1e8e3e; --bg: #f8f9fa; }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #202124; padding-bottom: 70px; }
-        
-        header { background: white; padding: 15px; border-bottom: 1px solid #dadce0; position: sticky; top: 0; z-index: 100; text-align: center; }
-        header h1 { font-size: 18px; color: var(--primary); }
-        #headerSub { font-size: 12px; color: #70757a; margin-top: 4px; }
-
-        #bannerVencidas { background: var(--danger); color: white; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; display: none; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        .nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #dadce0; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
-        .nav-item { border: none; background: none; color: #70757a; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
-        .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-item i { font-size: 20px; }
-
-        .view { display: none; padding: 15px; }
-        .view.active { display: block; }
-
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 12px; text-align: center; position: relative; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
-        .card h3 { font-size: 16px; margin-bottom: 4px; }
-        .card p { font-size: 10px; color: #70757a; }
-        .card.hospital { border-left: 4px solid var(--danger); }
-        .card.base { border-left: 4px solid var(--success); }
-        .card.vencida { background: #fce8e6; border: 2px solid var(--danger); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-
-        .hosp-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        
-        .btn-fab { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 24px; font-weight: bold; margin-top: 15px; width: 100%; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dadce0; border-radius: 4px; font-size: 16px; }
-    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #1a73e8; --google-gray: #5f6368; --danger: #d93025; --success: #1e8e3e; --bg: #f1f3f4; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: var(--bg); color: #202124; padding-bottom: 80px; }
+        header { background: white; padding: 16px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid #dadce0; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(60,64,67,0.3); }
+        header h1 { font-size: 20px; color: var(--primary); font-weight: 500; }
+        #headerSub { font-size: 13px; color: var(--google-gray); margin-top: 4px; }
+        .banner-alert { background: var(--danger); color: white; padding: 10px; text-align: center; font-weight: 500; display: none; animation: blink 1.5s infinite; font-size: 14px; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .view { display: none; padding: 16px; }
+        .view.active { display: block; }
+        .machine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .machine-card { background: white; border-radius: 12px; padding: 16px; text-align: center; border: 1px solid #dadce0; position: relative; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .machine-card h3 { font-size: 18px; color: #3c4043; }
+        .machine-card p { font-size: 11px; color: #70757a; }
+        .machine-card.status-hospital { border-left: 6px solid var(--danger); }
+        .machine-card.status-base { border-left: 6px solid var(--success); }
+        .machine-card.vencida { border: 2px solid var(--danger); background: #fce8e6; }
+        .badge-liberada { position: absolute; top: 0; right: 0; background: var(--danger); color: white; font-size: 9px; padding: 2px 6px; border-bottom-left-radius: 8px; font-weight: bold; }
+        .hosp-list { display: flex; flex-direction: column; gap: 12px; }
+        .hosp-item { background: white; border-radius: 12px; padding: 16px; border: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center; }
+        .hosp-info h4 { font-size: 15px; color: #3c4043; }
+        .hosp-count { background: var(--primary); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; height: 64px; border-top: 1px solid #dadce0; z-index: 1000; }
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--google-gray); border: none; background: none; gap: 4px; }
+        .nav-btn.active { color: var(--primary); }
+        .driver-selector { width: 100%; background: white; border-radius: 8px; border: 1px solid #dadce0; padding: 12px; margin-bottom: 16px; font-size: 15px; }
+    </style>
 </head>
 <body>
-
-    <header>
-        <h1>SOS RIM - LOGÍSTICA</h1>
-        <div id="headerSub">Selecione o motorista</div>
-    </header>
-
-    <div id="bannerVencidas">⚠️ EXISTEM MÁQUINAS VENCIDAS!</div>
-
+    <div class="banner-alert" id="alertBanner">⚠️ MÁQUINAS VENCIDAS!</div>
+    <header><h1>SOS RIM</h1><div id="headerSub">Gestão Logística</div></header>
     <div id="view-home" class="view active">
-        <select id="driverSelect" onchange="onDriverChange()">
-            <option value="">-- Quem é você? --</option>
+        <select id="driverSelect" class="driver-selector" onchange="updateDriver()">
+            <option value="">Selecione o Motorista</option>
             <option value="Sérgio">Sérgio</option>
             <option value="Motorista 2">Motorista 2</option>
-            <option value="Motorista 3">Motorista 3</option>
         </select>
-        <div id="machineGrid" class="grid"></div>
+        <div id="machineGrid" class="machine-grid"></div>
     </div>
-
-    <div id="view-panel" class="view">
-        <h2 style="font-size:16px; margin-bottom:15px;">Lista de Hospitais</h2>
-        <div id="hospitalList"></div>
+    <div id="view-hosp" class="view">
+        <div id="hospitalList" class="hosp-list"></div>
     </div>
-
     <div id="view-config" class="view">
-        <h2 style="font-size:16px; margin-bottom:15px;">Configurações</h2>
-        <button class="btn-fab" style="background:#dadce0; color:#333;" onclick="if(confirm('Limpar todos os dados localmente?')) { localStorage.clear(); location.reload(); }">Resetar Aplicativo</button>
-        <p style="font-size:10px; color:#aaa; margin-top:20px; text-align:center;">v2.0 - Hospitais Corrigidos</p>
+        <div class="hosp-item" style="flex-direction:column; align-items:flex-start; gap:10px;">
+            <h4>Configurações</h4><p>v2.1 - Estável</p>
+            <button style="width:100%; padding:10px; color:red;" onclick="localStorage.clear(); location.reload();">Reset Total</button>
+        </div>
     </div>
-
-    <div class="nav">
-        <button id="nav-home" class="nav-item active" onclick="switchView('home')"><i class="fas fa-truck-ramp-box"></i>Máquinas</button>
-        <button id="nav-panel" class="nav-item" onclick="switchView('panel')"><i class="fas fa-hospital"></i>Hospitais</button>
-        <button id="nav-config" class="nav-item" onclick="switchView('config')"><i class="fas fa-cog"></i>Config</button>
-    </div>
-
+    <nav class="nav-bar">
+        <button id="btn-home" class="nav-btn active" onclick="showView('home')"><i class="fas fa-th-large"></i><span>Máquinas</span></button>
+        <button id="btn-hosp" class="nav-btn" onclick="showView('hosp')"><i class="fas fa-hospital"></i><span>Hospitais</span></button>
+        <button id="btn-config" class="nav-btn" onclick="showView('config')"><i class="fas fa-sliders"></i><span>Ajustes</span></button>
+    </nav>
     <script>
-        var TOTAL = 18;
-        var PRESET_HOSPITALS = [
-            'Hospital Erasto Gaertner',
-            'Hospital Erastinho',
-            'Hospital Pilar',
-            'Hospital Nossa Senhora das Graças',
-            'Hospital São Marcelino Champagnat',
-            'INC - Ecoville',
-            'Hospital Cruz Vermelha',
-            'Hospital Santa Casa',
-            'Hospital do Trabalhador',
-            'Hospital Cajuru',
-            'Hospital Evangélico Mackenzie',
-            'Hospital Pequeno Príncipe',
-            'Hospital das Clínicas',
-            'Hospital São Lucas',
-            'Hospital Santa Cruz',
-            'Hospital Madalena Sofia',
-            'Hospital Vita BR',
-            'Hospital Vita Batel',
-            'Hospital de Reabilitação',
-            'Hospital de Idosos',
-            'Yoshimi (Bairro Alto)'
-        ];
-
-        var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
-        
-        // Garante que o estado tenha TODOS os hospitais e 18 máquinas
-        if (!state || !state.hospitals || state.hospitals.length < 10) {
-            state = { 
-                machines: state ? state.machines : [], 
-                hospitals: PRESET_HOSPITALS 
-            };
-            if (state.machines.length === 0) {
-                for (var i = 1; i <= TOTAL; i++) {
-                    state.machines.push({ id: i, status: 'base', hospital: null, liberada: false, liberadaPrazo: null });
-                }
-            }
-            save();
-        }
-
+        var state = JSON.parse(localStorage.getItem('hm_state')) || {
+            machines: Array.from({length: 18}, (_, i) => ({ id: i + 1, status: 'base', hosp: '', lib: false, prazo: null })),
+            hospitals: ['Hospital Erasto Gaertner', 'Hospital Erastinho', 'Hospital Pilar', 'Hospital Nossa Sra. Graças', 'Champagnat', 'INC Ecoville', 'Cruz Vermelha', 'Santa Casa', 'Hospital do Trabalhador', 'Hospital Cajuru', 'Evangélico Mackenzie', 'Pequeno Príncipe', 'Hospital das Clínicas', 'Hospital São Lucas', 'Santa Cruz', 'Madalena Sofia', 'Vita BR', 'Vita Batel', 'Reabilitação', 'Yoshimi (Bairro Alto)']
+        };
         function save() { localStorage.setItem('hm_state', JSON.stringify(state)); }
-
-        function switchView(id) {
+        function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('view-' + id).classList.add('active');
-            document.getElementById('nav-' + id).classList.add('active');
-            if (id === 'home') renderGrid();
-            if (id === 'panel') renderPanel();
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            document.getElementById('btn-' + viewId).classList.add('active');
+            if(viewId === 'home') renderMachines();
+            if(viewId === 'hosp') renderHospitals();
         }
-
-        function onDriverChange() {
-            var d = document.getElementById('driverSelect').value;
-            document.getElementById('headerSub').textContent = d || 'Selecione o motorista';
-            renderGrid();
+        function updateDriver() {
+            document.getElementById('headerSub').innerText = document.getElementById('driverSelect').value || 'Gestão Logística';
         }
-
-        function renderGrid() {
-            var html = '';
-            var agora = new Date().getTime();
-            var temVencida = false;
-
-            state.machines.forEach(m => {
-                var isVencida = m.liberada && m.liberadaPrazo && agora > new Date(m.liberadaPrazo).getTime();
-                if (isVencida) temVencida = true;
-
-                html += `<div class="card ${m.status} ${isVencida ? 'vencida' : ''}" onclick="touchMachine(${m.id})">
-                    <h3>${m.id}</h3>
-                    <p>${m.hospital || 'Na Base'}</p>
-                    ${m.liberada ? '<span style="font-size:10px; color:red; font-weight:bold;">LIBERADA</span>' : ''}
-                </div>`;
-            });
-            document.getElementById('machineGrid').innerHTML = html;
-            document.getElementById('bannerVencidas').style.display = temVencida ? 'block' : 'none';
+        function renderMachines() {
+            var grid = document.getElementById('machineGrid');
+            var now = new Date().getTime();
+            var alert = false;
+            grid.innerHTML = state.machines.map(m => {
+                var isVencida = m.lib && m.prazo && now > new Date(m.prazo).getTime();
+                if(isVencida) alert = true;
+                return '<div class="machine-card status-'+m.status+' '+(isVencida ? 'vencida' : '')+'" onclick="actionMachine('+m.id+')">' +
+                       (m.lib ? '<div class="badge-liberada">LIB</div>' : '') +
+                       '<h3>'+m.id+'</h3><p>'+(m.hosp || 'Na Base')+'</p></div>';
+            }).join('');
+            document.getElementById('alertBanner').style.display = alert ? 'block' : 'none';
         }
-
-        function renderPanel() {
-            var html = '';
-            state.hospitals.forEach(h => {
-                var ocupadas = state.machines.filter(m => m.hospital === h).length;
-                html += `<div class="hosp-card">
-                    <strong>${h}</strong><br>
-                    <small>${ocupadas} máquina(s) neste local</small>
-                </div>`;
-            });
-            document.getElementById('hospitalList').innerHTML = html;
+        function renderHospitals() {
+            document.getElementById('hospitalList').innerHTML = state.hospitals.map(h => {
+                var count = state.machines.filter(m => m.hosp === h).length;
+                return '<div class="hosp-item"><div class="hosp-info"><h4>'+h+'</h4><p>'+count+' máquinas</p></div>' +
+                       (count > 0 ? '<div class="hosp-count">'+count+'</div>' : '') + '</div>';
+            }).join('');
         }
-
-        function touchMachine(id) {
+        function actionMachine(id) {
             var m = state.machines.find(x => x.id === id);
-            var d = document.getElementById('driverSelect').value;
-            if (!d) { alert('Selecione seu nome primeiro!'); return; }
-
-            if (m.status === 'base') {
-                // Abre lista de hospitais para seleção mais rápida
-                var h = prompt('Escolha o Hospital (ou digite o nome):\n\n' + state.hospitals.slice(0,10).join('\n'));
-                if (h) {
-                    m.status = 'hospital';
-                    m.hospital = h;
-                    save(); renderGrid();
-                }
+            if(m.status === 'base') {
+                var h = prompt("Para qual Hospital vai a máquina "+id+"?");
+                if(h) { m.status = 'hospital'; m.hosp = h; save(); renderMachines(); }
             } else {
-                var acao = confirm('Máquina ' + id + ' voltou para a base? (OK) ou Marcar Recolha/Liberada? (Cancelar)');
-                if (acao) {
-                    m.status = 'base'; m.hospital = null; m.liberada = false; m.liberadaPrazo = null;
-                } else {
-                    var hora = prompt('Horário da recolha? (Ex: 14:30)');
-                    if (hora) {
-                        var hoje = new Date();
-                        var dataPrazo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), hora.split(':')[0], hora.split(':')[1]);
-                        m.liberada = true;
-                        m.liberadaPrazo = dataPrazo.toISOString();
+                if(confirm("Máquina "+id+" voltou para BASE?")) {
+                    m.status = 'base'; m.hosp = ''; m.lib = false; m.prazo = null;
+                } else if(confirm("Marcar como LIBERADA?")) {
+                    var hora = prompt("Horário de recolha? (Ex: 15:00)");
+                    if(hora) {
+                        var d = new Date();
+                        var p = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hora.split(':')[0], hora.split(':')[1]);
+                        m.lib = true; m.prazo = p.toISOString();
                     }
                 }
-                save(); renderGrid();
+                save(); renderMachines();
             }
         }
-
-        setInterval(renderGrid, 30000);
-        renderGrid();
+        renderMachines();
     </script>
 </body>
 </html>
