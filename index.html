@@ -60,14 +60,14 @@
     </div>
 
     <div id="view-panel" class="view">
-        <h2 style="font-size:16px; margin-bottom:15px;">Hospitais Cadastrados</h2>
+        <h2 style="font-size:16px; margin-bottom:15px;">Lista de Hospitais</h2>
         <div id="hospitalList"></div>
     </div>
 
     <div id="view-config" class="view">
         <h2 style="font-size:16px; margin-bottom:15px;">Configurações</h2>
         <button class="btn-fab" style="background:#dadce0; color:#333;" onclick="if(confirm('Limpar todos os dados localmente?')) { localStorage.clear(); location.reload(); }">Resetar Aplicativo</button>
-        <p style="font-size:10px; color:#aaa; margin-top:20px; text-align:center;">v1.9 - Modo de Segurança (Sincronização Desligada)</p>
+        <p style="font-size:10px; color:#aaa; margin-top:20px; text-align:center;">v2.0 - Hospitais Corrigidos</p>
     </div>
 
     <div class="nav">
@@ -79,20 +79,41 @@
     <script>
         var TOTAL = 18;
         var PRESET_HOSPITALS = [
-            { nome: 'Hospital Erasto Gaertner' },
-            { nome: 'Hospital Erastinho' },
-            { nome: 'Hospital Pilar' },
-            { nome: 'Hospital Nossa Senhora das Graças' },
-            { nome: 'Hospital São Marcelino Champagnat' },
-            { nome: 'INC - Campo Comprido' },
-            { nome: 'Yoshimi (Bairro Alto)' }
+            'Hospital Erasto Gaertner',
+            'Hospital Erastinho',
+            'Hospital Pilar',
+            'Hospital Nossa Senhora das Graças',
+            'Hospital São Marcelino Champagnat',
+            'INC - Ecoville',
+            'Hospital Cruz Vermelha',
+            'Hospital Santa Casa',
+            'Hospital do Trabalhador',
+            'Hospital Cajuru',
+            'Hospital Evangélico Mackenzie',
+            'Hospital Pequeno Príncipe',
+            'Hospital das Clínicas',
+            'Hospital São Lucas',
+            'Hospital Santa Cruz',
+            'Hospital Madalena Sofia',
+            'Hospital Vita BR',
+            'Hospital Vita Batel',
+            'Hospital de Reabilitação',
+            'Hospital de Idosos',
+            'Yoshimi (Bairro Alto)'
         ];
 
         var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
-        if (!state) {
-            state = { machines: [], hospitals: PRESET_HOSPITALS };
-            for (var i = 1; i <= TOTAL; i++) {
-                state.machines.push({ id: i, status: 'base', hospital: null, liberada: false, liberadaPrazo: null });
+        
+        // Garante que o estado tenha TODOS os hospitais e 18 máquinas
+        if (!state || !state.hospitals || state.hospitals.length < 10) {
+            state = { 
+                machines: state ? state.machines : [], 
+                hospitals: PRESET_HOSPITALS 
+            };
+            if (state.machines.length === 0) {
+                for (var i = 1; i <= TOTAL; i++) {
+                    state.machines.push({ id: i, status: 'base', hospital: null, liberada: false, liberadaPrazo: null });
+                }
             }
             save();
         }
@@ -136,9 +157,9 @@
         function renderPanel() {
             var html = '';
             state.hospitals.forEach(h => {
-                var ocupadas = state.machines.filter(m => m.hospital === h.nome).length;
+                var ocupadas = state.machines.filter(m => m.hospital === h).length;
                 html += `<div class="hosp-card">
-                    <strong>${h.nome}</strong><br>
+                    <strong>${h}</strong><br>
                     <small>${ocupadas} máquina(s) neste local</small>
                 </div>`;
             });
@@ -151,7 +172,8 @@
             if (!d) { alert('Selecione seu nome primeiro!'); return; }
 
             if (m.status === 'base') {
-                var h = prompt('Para qual hospital a máquina ' + id + ' vai?');
+                // Abre lista de hospitais para seleção mais rápida
+                var h = prompt('Escolha o Hospital (ou digite o nome):\n\n' + state.hospitals.slice(0,10).join('\n'));
                 if (h) {
                     m.status = 'hospital';
                     m.hospital = h;
