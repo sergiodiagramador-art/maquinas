@@ -3,106 +3,148 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>Logística v2.9 - AZULÃO</title>
+    <title>Logística v3.0 - AZULÃO PRO</title>
     <style>
-        body { font-family: sans-serif; background: #0056b3; margin: 0; padding-bottom: 70px; color: white; text-align: center; overflow: hidden; }
-        header { background: #004494; padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 2px solid rgba(255,255,255,0.2); }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; height: 80vh; overflow-y: auto; }
-        .card { background: #28a745; color: white; padding: 22px 2px; border-radius: 12px; font-weight: bold; font-size: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.2); }
+        body { font-family: sans-serif; background: #0056b3; margin: 0; color: white; text-align: center; overflow: hidden; }
+        header { background: #004494; padding: 10px; font-weight: bold; font-size: 18px; border-bottom: 2px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+        
+        .control-bar { background: #f8f9fa; padding: 10px; display: flex; gap: 8px; justify-content: center; border-bottom: 1px solid #ddd; }
+        .btn-lote { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; font-weight: bold; color: white; font-size: 12px; text-transform: uppercase; }
+        
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; height: 70vh; overflow-y: auto; }
+        .card { background: #28a745; color: white; padding: 20px 2px; border-radius: 12px; font-weight: bold; font-size: 22px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2); }
         .card.rua { background: #fd7e14; }
         .card.hosp { background: white; color: #0056b3; border: 3px solid #0056b3; }
         .card.manut { background: #dc3545; }
-        .card small { display: block; font-size: 11px; margin-top: 6px; font-weight: normal; text-transform: uppercase; }
+        .card small { display: block; font-size: 10px; margin-top: 5px; font-weight: normal; text-transform: uppercase; }
         
-        /* Seletor de Hospitais - Ocupa a tela toda quando ativo */
-        #hosp-selector { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background: #f8f9fa; color: #333; z-index: 999; 
-            overflow-y: auto; padding: 0; 
-        }
-        .h-header { background: #004494; color: white; padding: 20px; font-weight: bold; font-size: 18px; position: sticky; top: 0; }
-        .h-option { padding: 20px; border-bottom: 1px solid #ddd; text-align: left; font-size: 18px; font-weight: bold; background: white; }
-        .h-option:active { background: #e9ecef; }
-        .btn-cancel { width: 100%; padding: 20px; background: #dc3545; color: white; border: none; font-weight: bold; font-size: 16px; }
+        /* Modais Internos (Para não travar) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; color: #333; z-index: 1000; overflow-y: auto; text-align: left; }
+        .modal-h { background: #004494; color: white; padding: 20px; font-weight: bold; font-size: 18px; position: sticky; top: 0; display: flex; justify-content: space-between; }
+        .opt { padding: 18px; border-bottom: 1px solid #ddd; font-size: 16px; font-weight: bold; background: white; }
+        .opt:active { background: #eee; }
+        
+        .qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px; }
+        .qty-btn { padding: 15px; background: #0056b3; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
-    <header>LOGÍSTICA v2.9 - AZULÃO</header>
+    <header>
+        <span>v3.0 AZULÃO</span>
+        <span id='disp-driver' onclick='openDriver()' style='background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:5px; font-size:12px;'>👤 Sérgio</span>
+    </header>
+
+    <div class='control-bar'>
+        <button class='btn-lote' style='background:#fd7e14;' onclick='openLote("retirar")'>⬆️ Retirar Lote</button>
+        <button class='btn-lote' style='background:#0056b3;' onclick='openLote("inserir")'>⬇️ Inserir Lote</button>
+    </div>
     
-    <div id='v-m' class='view active'>
-        <div id='grid' class='grid'></div>
+    <div id='grid' class='grid'></div>
+
+    <!-- MODAL: MOTORISTA -->
+    <div id='modal-driver' class='modal'>
+        <div class='modal-h'>MOTORISTA <span onclick='closeM("modal-driver")'>✖</span></div>
+        <div class='opt' onclick='setDriver("Sérgio")'>Sérgio</div>
+        <div class='opt' onclick='setDriver("Jairo")'>Jairo</div>
+        <div class='opt' onclick='setDriver("Aderildo")'>Aderildo</div>
     </div>
 
-    <!-- LISTA DE HOSPITAIS OCULTA QUE APARECE AO TOCAR -->
-    <div id='hosp-selector'>
-        <div class='h-header'>SELECIONE O HOSPITAL:</div>
-        <div id='options'></div>
-        <button class='btn-cancel' onclick='closeHosp()'>❌ CANCELAR</button>
+    <!-- MODAL: QUANTIDADE -->
+    <div id='modal-qty' class='modal'>
+        <div class='modal-h'>QUANTIDADE <span onclick='closeM("modal-qty")'>✖</span></div>
+        <div class='qty-grid' id='qty-options'></div>
+    </div>
+
+    <!-- MODAL: DESTINO -->
+    <div id='modal-dest' class='modal'>
+        <div class='modal-h'>PARA ONDE? <span onclick='closeM("modal-dest")'>✖</span></div>
+        <div class='opt' style='background:#fd7e14; color:white;' onclick='setDest("RUA", "rua")'>RUA</div>
+        <div id='hosp-options'></div>
     </div>
 
     <script>
-        // Lista Raiz Fixa
-        const HOSPITAIS = [
-            'Nossa Saúde', 'Hospital das Nações', 'Hospital Erasto Gaertner', 
-            'Hospital Erastinho', 'Hospital Pilar', 'Hospital Marcelino Champagnat', 
-            'Hospital do Trabalhador', 'Hospital INC Ecoville', 'Hospital Santa Cruz', 
-            'Hospital Sugisawa', 'Hospital de Clínicas', 'Hospital Evangélico', 
-            'Hospital São Vicente', 'Hospital IPO', 'Hospital Vita Batel'
-        ].sort();
-
+        const HOSPITAIS = ['Nossa Saúde', 'Nações', 'Erasto', 'Erastinho', 'Pilar', 'Marcelino', 'Trabalhador', 'INC', 'Santa Cruz', 'Sugisawa', 'Clínicas', 'Evangélico', 'São Vicente', 'IPO', 'Vita'].sort();
         const STATES = ['base', 'rua', 'hosp', 'manut'];
-        let machines = Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''}));
-        let targetMachineId = null;
+        let state = {
+            m: Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''})),
+            d: 'Sérgio'
+        };
+
+        let batchType = ''; // retirar ou inserir
+        let batchQty = 0;
 
         function render() {
-            const container = document.getElementById('grid');
-            container.innerHTML = machines.map(m => 
-                '<div class="card '+m.s+'" onclick="handleTap('+m.id+')">'+m.id+'<br><small>'+(m.h||m.s.toUpperCase())+'</small></div>'
+            document.getElementById('grid').innerHTML = state.m.map(m => 
+                '<div class="card '+m.s+'" onclick="tapM('+m.id+')">'+m.id+'<br><small>'+(m.h||m.s.toUpperCase())+'</small></div>'
             ).join('');
-            localStorage.setItem('hm_v29_stable', JSON.stringify(machines));
+            document.getElementById('disp-driver').innerText = '👤 ' + state.d;
+            localStorage.setItem('hm_v3_final', JSON.stringify(state));
         }
 
-        function handleTap(id) {
-            const m = machines.find(x => x.id === id);
-            let currentIdx = STATES.indexOf(m.s);
-            let nextState = STATES[(currentIdx + 1) % STATES.length];
-            
-            if(nextState === 'hosp') {
-                targetMachineId = id;
-                showHospList();
+        function tapM(id) {
+            const m = state.m.find(x => x.id === id);
+            let next = STATES[(STATES.indexOf(m.s) + 1) % STATES.length];
+            if(next === 'hosp') {
+                batchType = 'single';
+                batchQty = id;
+                openDest();
             } else {
-                m.s = nextState;
-                m.h = '';
-                render();
+                m.s = next; m.h = ''; render();
             }
         }
 
-        function showHospList() {
-            const listDiv = document.getElementById('options');
-            listDiv.innerHTML = HOSPITAIS.map(h => 
-                '<div class="h-option" onclick="confirmHosp(\''+h+'\')">'+h+'</div>'
-            ).join('');
-            document.getElementById('hosp-selector').style.display = 'block';
+        // MOTORISTA
+        function openDriver() { document.getElementById('modal-driver').style.display='block'; }
+        function setDriver(n) { state.d=n; closeM('modal-driver'); render(); }
+
+        // LOTE
+        function openLote(type) {
+            batchType = type;
+            const container = document.getElementById('qty-options');
+            container.innerHTML = [1,2,3,4,5,6,10,18].map(n => '<button class="qty-btn" onclick="setQty('+n+')">'+n+'</button>').join('');
+            document.getElementById('modal-qty').style.display='block';
         }
 
-        function confirmHosp(name) {
-            const m = machines.find(x => x.id === targetMachineId);
-            m.s = 'hosp';
-            m.h = name;
-            closeHosp();
+        function setQty(n) {
+            batchQty = n;
+            closeM('modal-qty');
+            if(batchType === 'retirar') openDest();
+            else execLote('base', '');
+        }
+
+        function openDest() {
+            const container = document.getElementById('hosp-options');
+            container.innerHTML = HOSPITAIS.map(h => '<div class="opt" onclick="setDest(\''+h+'\', \'hosp\')">'+h+'</div>').join('');
+            document.getElementById('modal-dest').style.display='block';
+        }
+
+        function setDest(hName, sType) {
+            if(batchType === 'single') {
+                const m = state.m.find(x => x.id === batchQty);
+                m.s = sType; m.h = (sType==='hosp'?hName:'');
+            } else {
+                execLote(sType, hName);
+            }
+            closeM('modal-dest');
             render();
         }
 
-        function closeHosp() {
-            document.getElementById('hosp-selector').style.display = 'none';
-            targetMachineId = null;
+        function execLote(sType, hName) {
+            let count = 0;
+            state.m.forEach(m => {
+                if(batchType === 'retirar' && m.s === 'base' && count < batchQty) {
+                    m.s = sType; m.h = (sType==='hosp'?hName:''); count++;
+                } else if(batchType === 'inserir' && m.s !== 'base' && count < batchQty) {
+                    m.s = 'base'; m.h = ''; count++;
+                }
+            });
+            render();
         }
 
-        // Carregar dados salvos
-        const saved = localStorage.getItem('hm_v29_stable');
-        if(saved) machines = JSON.parse(saved);
+        function closeM(id) { document.getElementById(id).style.display='none'; }
+
+        const saved = localStorage.getItem('hm_v3_final');
+        if(saved) state = JSON.parse(saved);
         render();
     </script>
 </body>
