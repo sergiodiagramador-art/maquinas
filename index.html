@@ -1408,6 +1408,7 @@ function exportarBackup() {
   var dados = JSON.stringify(state);
   var html = document.documentElement.outerHTML;
   // Injeta os dados como script inline antes do <!-- v1.1 -->
+<div onclick="localStorage.clear(); location.reload();" style="position:fixed; bottom:10px; right:10px; font-size:10px; color:#ccc; z-index:10000;">redefinir</div>
 </body>
   var backup = html.replace(
     /\/\/ ── INIT ──/,
@@ -1447,13 +1448,20 @@ function importarBackup(event) {
 }
 
 // ── INIT ──
+console.log('Iniciando renderização local...');
 renderGrid();
 renderPanel();
 renderHistorico();
 renderFechGrid();
 atualizarBannerVencidas();
-loadFromFirebase();
+
+// Só tenta carregar do Firebase depois de 1 segundo para não travar a tela
+setTimeout(function() {
+  console.log('Tentando conexão Firebase...');
+  loadFromFirebase();
+}, 1000);
 </script>
 <!-- v1.1 -->
+<div onclick="localStorage.clear(); location.reload();" style="position:fixed; bottom:10px; right:10px; font-size:10px; color:#ccc; z-index:10000;">redefinir</div>
 </body>
 </html>
