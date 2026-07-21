@@ -1211,7 +1211,7 @@ function montarUrlRota(origem, waypoints) {
     (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
     '&travelmode=driving';
   closeModal('modalRota');
-  window.open(url, '_blank');
+  window.location.href = url;
 }
 
 // ── SERVICE WORKER ──
