@@ -1171,34 +1171,40 @@ function abrirRota() {
 }
 
 function montarUrlRota(origem, waypoints) {
-  // Otimiza a ordem dos waypoints pelo vizinho mais próximo
-  var pts = waypoints.map(function(w) {
-    var parts = w.split(',');
-    return { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]), orig: w };
-  });
-
-  function distPts(a, b) {
-    var dLat = a.lat - b.lat, dLng = a.lng - b.lng;
-    return dLat*dLat + dLng*dLng; // distância euclidiana simples para ordenação
-  }
-
-  // Ponto de partida: tenta parsear origem como lat,lng ou usa primeiro ponto
+  // Se origem é endereço (texto), não tenta otimizar pelo vizinho mais próximo
+  // A ordem já vem priorizada por prazo de abrirRota()
   var origemParts = origem.split(',');
-  var cur = { lat: parseFloat(origemParts[0]), lng: parseFloat(origemParts[1]) };
-  var ordered = [];
-  var remaining = pts.slice();
-  while (remaining.length > 0) {
-    var best = 0;
-    for (var i = 1; i < remaining.length; i++) {
-      if (distPts(cur, remaining[i]) < distPts(cur, remaining[best])) best = i;
+  var origemEhCoord = origemParts.length === 2 &&
+    !isNaN(parseFloat(origemParts[0])) && !isNaN(parseFloat(origemParts[1]));
+
+  var ordered;
+  if (origemEhCoord) {
+    // Otimiza pelo vizinho mais próximo a partir das coordenadas
+    var pts = waypoints.map(function(w) {
+      var p = w.split(',');
+      return { lat: parseFloat(p[0]), lng: parseFloat(p[1]), orig: w };
+    });
+    var cur = { lat: parseFloat(origemParts[0]), lng: parseFloat(origemParts[1]) };
+    var remaining = pts.slice();
+    ordered = [];
+    while (remaining.length > 0) {
+      var best = 0;
+      for (var i = 1; i < remaining.length; i++) {
+        var dBest = Math.pow(cur.lat-remaining[best].lat,2)+Math.pow(cur.lng-remaining[best].lng,2);
+        var dI    = Math.pow(cur.lat-remaining[i].lat,2)+Math.pow(cur.lng-remaining[i].lng,2);
+        if (dI < dBest) best = i;
+      }
+      ordered.push(remaining[best].orig);
+      cur = remaining[best];
+      remaining.splice(best, 1);
     }
-    ordered.push(remaining[best]);
-    cur = remaining[best];
-    remaining.splice(best, 1);
+  } else {
+    // Endereço texto: mantém ordem por prazo
+    ordered = waypoints.slice();
   }
 
-  var destino = ordered[ordered.length - 1].orig;
-  var wps = ordered.slice(0, -1).map(function(p) { return p.orig; });
+  var destino = ordered[ordered.length - 1];
+  var wps = ordered.slice(0, -1);
   var url = 'https://www.google.com/maps/dir/?api=1' +
     '&origin=' + origem +
     '&destination=' + destino +
