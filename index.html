@@ -500,20 +500,9 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 
 <div class="toast" id="toast"></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
-    authDomain: "sosrim-592ab.firebaseapp.com",
-    projectId: "sosrim-592ab",
-    storageBucket: "sosrim-592ab.firebasestorage.app",
-    messagingSenderId: "483781840617",
-    appId: "1:483781840617:web:02a3d62b3e79f5b001ea78",
-    measurementId: "G-HW70F0DEEH"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
 
 // ── STATE ──
 var TOTAL = 18;
@@ -561,7 +550,7 @@ if (!state) {
 
 function save() {
   localStorage.setItem('hm_state', JSON.stringify(state));
-  if (typeof db !== 'undefined') {
+  if (false) {
     db.collection('settings').doc('current_state').set(state).catch(function(e){ alert('Erro Firebase:' + e.message); });
   }
 }
@@ -569,7 +558,7 @@ function save() {
 function loadFromFirebase() {
   console.log('Iniciando loadFromFirebase...');
   render(); // Força uma renderização imediata com o que tiver
-  if (typeof db !== 'undefined') {
+  if (false) {
     try {
       db.collection('settings').doc('current_state').onSnapshot(function(doc) {
         if (doc.exists) {
