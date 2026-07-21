@@ -151,7 +151,12 @@ body {
 
 <!-- Motorista / Home -->
 <div id="view-home" class="view active">
-    <div class="grid" id="grid-motorista"></div>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button class="btn btn-orange" style="margin:0; flex:1; height:60px; font-size:14px;" onclick="iniciarSaidaColetiva()">⬆️ Saída da Base</button>
+        <button class="btn btn-blue" style="margin:0; flex:1; height:60px; font-size:14px;" onclick="iniciarRetornoColetivo()">⬇️ Retorno Base</button>
+    </div>
+<div class="grid" id="grid-motorista"></div>
 </div>
 
 <!-- Painel -->
@@ -216,13 +221,12 @@ body {
 </div>
 
 <script>
-        const HOSPITAIS = [
-        "Nossa Saúde", "Hospital das Nações", "Hospital Erasto Gaertner", 
-        "Hospital Erastinho", "Hospital Pilar", "Hospital N. Sra. das Graças", 
-        "Hospital Marcelino Champagnat", "Hospital INC Ecoville",
-        "Hospital do Trabalhador", "Maternidade Marillac", 
-        "Hospital Fraturas - Alto da XV", "Hospital Oswaldo Cruz", 
-        "Hospital São Lucas", "Yoshimi"
+    const HOSPITAIS = [
+        "Hospital Erasto Gaertner", "Hospital Erastinho", "Hospital Pilar", 
+        "Hospital N. Sra. das Graças", "Hospital Marcelino Champagnat", "Hospital INC Ecoville",
+        "Hospital do Trabalhador",
+        "Maternidade Marillac", "Hospital Fraturas - Alto da XV",
+        "Hospital Oswaldo Cruz", "Hospital São Lucas", "Yoshimi"
     ];
 
     let state = {
@@ -357,6 +361,54 @@ body {
         });
         const url = "https://wa.me/?text=" + encodeURIComponent(txt);
         window.open(url, '_blank');
+    }
+
+    
+    function iniciarSaidaColetiva() {
+        const qtd = prompt("Com quantas máquinas você está saindo?");
+        if (!qtd || isNaN(qtd) || qtd <= 0) return;
+        
+        const destino = prompt("Para qual hospital? (Deixe em branco para apenas Rua)");
+        
+        let alteradas = 0;
+        for (let i = 0; i < state.machines.length && alteradas < qtd; i++) {
+            if (state.machines[i].status === 'base') {
+                state.machines[i].status = destino ? 'hospital' : 'rua';
+                state.machines[i].hospital = destino || '';
+                alteradas++;
+            }
+        }
+        
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        state.logs.push({ id: 'Lote', time: timeStr, msg: `SAÍDA COLETIVA: ${alteradas} máquinas para ${destino || 'Rua'}` });
+        
+        save();
+        renderAll();
+        alert(`${alteradas} máquinas marcadas em saída.`);
+    }
+
+    function iniciarRetornoColetivo() {
+        const qtd = prompt("Quantas máquinas estão retornando para a base?");
+        if (!qtd || isNaN(qtd) || qtd <= 0) return;
+        
+        let alteradas = 0;
+        // Prioriza máquinas que estão no hospital ou rua para voltar para a base
+        for (let i = 0; i < state.machines.length && alteradas < qtd; i++) {
+            if (state.machines[i].status !== 'base' && state.machines[i].status !== 'manutencao') {
+                state.machines[i].status = 'base';
+                state.machines[i].hospital = '';
+                alteradas++;
+            }
+        }
+        
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        state.logs.push({ id: 'Lote', time: timeStr, msg: `RETORNO COLETIVO: ${alteradas} máquinas voltaram para base` });
+        
+        save();
+        renderAll();
+        alert(`${alteradas} máquinas retornaram para a base.`);
     }
 
     init();
