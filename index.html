@@ -1238,10 +1238,8 @@ function montarUrlRota(origem, waypoints, app) {
     url = 'https://ul.waze.com/ul?ll=' + partes[0] + '%2C' + partes[1] + '&navigate=yes&zoom=17';
     if (ordered.length > 1) showToast('Waze: ' + ordered.length + ' paradas. Abrirá uma por vez.');
   } else {
-    // Usa maps.google.com.br (versão web, não depende do app instalado)
-    url = 'https://maps.google.com.br/maps?dirflg=d' +
-      '&saddr=' + origem +
-      '&daddr=' + ordered.join('/to:');
+    // Formato simples: google.com/maps/dir/origem/p1/p2/destino
+    url = 'https://www.google.com/maps/dir/' + origem + '/' + ordered.join('/');
   }
 
   closeModal('modalRota');
