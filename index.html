@@ -3,55 +3,137 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>AZULÃO NEXT v1.2</title>
+    <title>AZULÃO PRO v1.3</title>
     <style>
-        body { font-family: sans-serif; background: #001f3f; margin: 0; color: white; text-align: center; overflow: hidden; }
-        header { background: #001529; padding: 15px; font-weight: bold; border-bottom: 4px solid #ffcc00; }
-        .release-time { font-size: 11px; color: #ffcc00; margin-top: 5px; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; height: 65vh; overflow-y: auto; }
-        .m { background: #28a745; padding: 25px 2px; border-radius: 10px; font-weight: bold; font-size: 24px; border: 2px solid white; }
-        .m.rua { background: #ff851b; }
-        .m.hosp { background: #ffffff; color: #001f3f; border: 4px solid #001f3f; }
-        .m.manut { background: #ff4136; }
-        .m small { display: block; font-size: 10px; margin-top: 5px; text-transform: uppercase; font-weight: bold; }
-        .controls { background: #ffffff; padding: 15px; color: #333; position: fixed; bottom: 0; width: 100%; box-sizing: border-box; border-top: 4px solid #001529; z-index: 100; }
-        .driver-info { font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #001f3f; text-align: left; display: flex; justify-content: space-between; }
-        select { width: 100%; padding: 15px; font-size: 18px; border-radius: 8px; border: 2px solid #001529; font-weight: bold; background: #f1f1f1; margin-bottom: 10px; }
-        .lote-bar { display: flex; gap: 8px; }
-        .btn-lote { flex: 1; padding: 12px; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 12px; text-transform: uppercase; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #004080; margin: 0; color: white; text-align: center; overflow: hidden; }
+        
+        /* Painel Superior (Header) */
+        header { background: #002b55; padding: 10px 15px; border-bottom: 3px solid #ffcc00; display: flex; justify-content: space-between; align-items: center; }
+        .version { font-size: 10px; color: #ffcc00; display: block; }
+        .driver-box { background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; }
+
+        /* Barra de Ações Rápidas (Lote) */
+        .action-bar { background: #f4f4f4; padding: 10px; display: flex; gap: 8px; border-bottom: 1px solid #ccc; }
+        .btn-action { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 11px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* Grid de Máquinas (Layout Azulão Clássico) */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; height: 70vh; overflow-y: auto; align-content: start; }
+        .card { background: #28a745; color: white; padding: 25px 2px; border-radius: 12px; font-weight: bold; font-size: 24px; border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 4px 8px rgba(0,0,0,0.4); position: relative; }
+        .card.rua { background: #fd7e14; }
+        .card.hosp { background: #ffffff; color: #004080; border: 3px solid #004080; }
+        .card.manut { background: #dc3545; }
+        .card small { display: block; font-size: 10px; margin-top: 6px; font-weight: normal; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 3px; }
+
+        /* Modal de Seleção (Tela Cheia - Nunca falha) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; color: #333; z-index: 9999; overflow-y: auto; }
+        .modal-header { background: #002b55; color: white; padding: 20px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; position: sticky; top: 0; }
+        .modal-opt { padding: 20px; border-bottom: 1px solid #eee; font-size: 18px; font-weight: bold; text-align: left; }
+        .modal-opt:active { background: #f0f0f0; }
+
+        /* Quantidade Lote */
+        .qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px; }
+        .btn-qty { padding: 20px 10px; background: #004080; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <header>AZULÃO NEXT v1.2<div class='release-time'>LIBERADO EM: 12:45</div></header>
-    <div id='grid' class='grid'></div>
-    <div class='controls'>
-        <div class='driver-info'><span>👤 MOTORISTA: <span id='cur-driver' style='color: #d35400;'>SÉRGIO</span></span><span onclick='toggleDriver()' style='text-decoration: underline; color: #007bff;'>Trocar</span></div>
-        <select id='h-select'><option value=''>-- SELECIONE O HOSPITAL --</option><option>Erasto Gaertner</option><option>Erastinho</option><option>Marcelino</option><option>Nossa Saúde</option><option>Nações</option><option>Pilar</option><option>Trabalhador</option><option>INC Ecoville</option><option>Santa Cruz</option><option>Sugisawa</option><option>Clínicas</option><option>Evangélico</option><option>São Vicente</option><option>IPO</option><option>Vita Batel</option></select>
-        <div class='lote-bar'><button class='btn-lote' style='background:#ff851b;' onclick="execLote('rua')">⬆️ Lote Rua</button><button class='btn-lote' style='background:#28a745;' onclick="execLote('base')">⬇️ Volta Base</button></div>
+    <header>
+        <div>
+            <span style='font-size:18px;'>AZULÃO PRO</span>
+            <span class='version'>v1.3 - LIBERADO 12:45</span>
+        </div>
+        <div class='driver-box' onclick='openModal("modal-driver")'>👤 <span id='txt-driver'>SÉRGIO</span></div>
+    </header>
+
+    <div class='action-bar'>
+        <button class='btn-action' style='background:#fd7e14;' onclick='startLote("retirar")'>⬆️ RETIRAR LOTE</button>
+        <button class='btn-action' style='background:#004080;' onclick='startLote("inserir")'>⬇️ VOLTA BASE</button>
     </div>
+
+    <div id='grid' class='grid'></div>
+
+    <!-- MODAL MOTORISTA -->
+    <div id='modal-driver' class='modal'>
+        <div class='modal-header'>SELECIONE MOTORISTA <span onclick='closeModal("modal-driver")'>✖</span></div>
+        <div class='modal-opt' onclick='setDriver("SÉRGIO")'>SÉRGIO</div>
+        <div class='modal-opt' onclick='setDriver("JAIRO")'>JAIRO</div>
+        <div class='modal-opt' onclick='setDriver("ADERILDO")'>ADERILDO</div>
+    </div>
+
+    <!-- MODAL QUANTIDADE -->
+    <div id='modal-qty' class='modal'>
+        <div class='modal-header'>QUANTAS MÁQUINAS? <span onclick='closeModal("modal-qty")'>✖</span></div>
+        <div class='qty-grid' id='qty-opts'></div>
+    </div>
+
+    <!-- MODAL HOSPITAL -->
+    <div id='modal-hosp' class='modal'>
+        <div class='modal-header'>SELECIONE DESTINO <span onclick='closeModal("modal-hosp")'>✖</span></div>
+        <div class='modal-opt' style='background:#fd7e14; color:white;' onclick='applyDest("RUA", "rua")'>MÁQUINA NA RUA</div>
+        <div id='hosp-list'></div>
+    </div>
+
     <script>
+        const HOSPITAIS = ['Erasto', 'Erastinho', 'Nossa Saúde', 'Nações', 'Pilar', 'Marcelino', 'Trabalhador', 'INC', 'Santa Cruz', 'Sugisawa', 'Clínicas', 'Evangélico', 'São Vicente', 'IPO', 'Vita'].sort();
         let state = { m: Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''})), d: 'SÉRGIO' };
-        const states = ['base', 'rua', 'hosp', 'manut'];
-        const drivers = ['SÉRGIO', 'JAIRO', 'ADERILDO'];
+        let bType = '', bQty = 0, bSingleId = null;
+
         function render() {
-            document.getElementById('grid').innerHTML = state.m.map(m => { let label = m.h || m.s.toUpperCase(); return '<div class="m '+m.s+'" onclick="cycle('+m.id+')">'+m.id+'<small>'+label+'</small></div>'; }).join('');
-            document.getElementById('cur-driver').innerText = state.d;
-            localStorage.setItem('azulao_next_v1_2', JSON.stringify(state));
+            document.getElementById('grid').innerHTML = state.m.map(m => {
+                let lbl = m.h || m.s.toUpperCase();
+                return '<div class="card '+m.s+'" onclick="tapM('+m.id+')">'+m.id+'<small>'+lbl+'</small></div>';
+            }).join('');
+            document.getElementById('txt-driver').innerText = state.d;
+            localStorage.setItem('azulao_v13_data', JSON.stringify(state));
         }
-        function cycle(id) {
-            let m = state.m.find(x => x.id === id);
-            let nextState = states[(states.indexOf(m.s) + 1) % states.length];
-            if(nextState === 'hosp') { let h = document.getElementById('h-select').value; if(!h) { alert('SELECIONE O HOSPITAL NA LISTA BRANCA!'); return; } m.h = h; } else { m.h = ''; }
-            m.s = nextState; render();
+
+        function tapM(id) {
+            const m = state.m.find(x => x.id === id);
+            const modes = ['base', 'rua', 'hosp', 'manut'];
+            let next = modes[(modes.indexOf(m.s) + 1) % modes.length];
+            if(next === 'hosp') { bType = 'single'; bSingleId = id; openHosp(); }
+            else { m.s = next; m.h = ''; render(); }
         }
-        function execLote(target) {
-            let n = prompt('Quantas máquinas mover?'); if(!n || isNaN(n)) return;
-            let count = 0; let h = document.getElementById('h-select').value;
-            state.m.forEach(m => { if(count < n) { if(target === 'rua' && m.s === 'base') { m.s = h ? 'hosp' : 'rua'; m.h = h; count++; } else if(target === 'base' && m.s !== 'base') { m.s = 'base'; m.h = ''; count++; } } });
-            render();
+
+        function startLote(type) {
+            bType = type;
+            const container = document.getElementById('qty-opts');
+            container.innerHTML = [1,2,3,4,5,6,10,18].map(n => '<button class="btn-qty" onclick="setQty('+n+')">'+n+'</button>').join('');
+            openModal('modal-qty');
         }
-        function toggleDriver() { state.d = drivers[(drivers.indexOf(state.d) + 1) % drivers.length]; render(); }
-        const saved = localStorage.getItem('azulao_next_v1_2'); if(saved) state = JSON.parse(saved); render();
+
+        function setQty(n) { bQty = n; closeModal('modal-qty'); if(bType === 'retirar') openHosp(); else execLote('base', ''); }
+        
+        function openHosp() {
+            const list = document.getElementById('hosp-list');
+            list.innerHTML = HOSPITAIS.map(h => '<div class="modal-opt" onclick="applyDest(\''+h+'\', \'hosp\')">'+h+'</div>').join('');
+            openModal('modal-hosp');
+        }
+
+        function applyDest(h, s) {
+            if(bType === 'single') {
+                let m = state.m.find(x => x.id === bSingleId);
+                m.s = s; m.h = (s==='hosp'?h:'');
+            } else { execLote(s, h); }
+            closeModal('modal-hosp'); render();
+        }
+
+        function execLote(s, h) {
+            let count = 0;
+            state.m.forEach(m => {
+                if(count < bQty) {
+                    if(bType === 'retirar' && m.s === 'base') { m.s = s; m.h = (s==='hosp'?h:''); count++; }
+                    else if(bType === 'inserir' && m.s !== 'base') { m.s = 'base'; m.h = ''; count++; }
+                }
+            });
+        }
+
+        function setDriver(n) { state.d = n; closeModal('modal-driver'); render(); }
+        function openModal(id) { document.getElementById(id).style.display = 'block'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        const saved = localStorage.getItem('azulao_v13_data');
+        if(saved) state = JSON.parse(saved);
+        render();
     </script>
 </body>
 </html>
