@@ -1110,8 +1110,13 @@ function abrirRota() {
     return prazo && agora >= prazo; // só se o prazo já chegou
   });
 
+  // Se nenhuma passou do prazo ainda, usa todas as liberadas mesmo assim
   if (liberadas.length === 0) {
-    showToast('Nenhuma máquina disponível para recolha agora!');
+    liberadas = state.machines.filter(function(m) { return m.liberada; });
+  }
+
+  if (liberadas.length === 0) {
+    showToast('Nenhuma máquina aguardando recolha!');
     return;
   }
 
@@ -1211,7 +1216,15 @@ function montarUrlRota(origem, waypoints) {
     (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
     '&travelmode=driving';
   closeModal('modalRota');
-  window.location.href = url;
+  // Tenta abrir o Google Maps app nativo primeiro
+  var appUrl = url.replace('https://www.google.com/maps', 'comgooglemaps://');
+  var link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ── SERVICE WORKER ──
