@@ -311,6 +311,34 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
   <div id="panelList"></div>
 </div>
 
+<!-- Modal: rota de recolha -->
+<div class="modal-overlay" id="modalRota" onclick="closeModalBg(event,'modalRota')">
+  <div class="modal">
+    <h2>🗺️ Rota de recolha</h2>
+    <div class="modal-sub" id="rotaSub"></div>
+    <div style="margin-bottom:12px">
+      <label>Ponto de partida</label>
+      <select class="driver-select" id="rotaPartidaTipo" onchange="toggleRotaPartida()" style="margin-bottom:8px">
+        <option value="base">🏭 Base (endereço fixo)</option>
+        <option value="gps">📍 Minha localização atual (GPS)</option>
+        <option value="manual">✏️ Digitar endereço</option>
+      </select>
+      <div id="rotaBaseDiv">
+        <input type="text" id="rotaBaseEnd" placeholder="Ex: Rua das Flores, 100, Curitiba">
+        <div style="font-size:11px;color:#888;margin-top:-6px;margin-bottom:8px">Endereço da base — salvo automaticamente</div>
+      </div>
+      <div id="rotaManualDiv" style="display:none">
+        <input type="text" id="rotaManualEnd" placeholder="Ex: Av. Sete de Setembro, 500, Curitiba">
+      </div>
+      <div id="rotaGpsDiv" style="display:none">
+        <div style="font-size:12px;color:#34a853;padding:8px 0">📍 Será usada sua localização GPS atual</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="abrirRota()">🗺️ Abrir rota no Google Maps</button>
+    <button class="btn btn-gray" onclick="closeModal('modalRota')">Fechar</button>
+  </div>
+</div>
+
 <div id="view-hospitais" class="view">
   <div class="gps-indicator" id="gpsIndicator" style="display:none">
     <div class="gps-dot"></div> GPS ativo
@@ -883,6 +911,13 @@ function renderPanel() {
     alTitle.style.color = '#e65100';
     alTitle.textContent = '⚡ Aguardando recolha (' + lib + ')';
     alertas.appendChild(alTitle);
+    // Botão de rota
+    var btnRota = document.createElement('button');
+    btnRota.className = 'btn btn-primary';
+    btnRota.style.marginBottom = '10px';
+    btnRota.textContent = '🗺️ Traçar rota de recolha';
+    btnRota.onclick = abrirModalRota;
+    alertas.appendChild(btnRota);
     state.machines.filter(function(m) { return m.liberada; }).forEach(function(m) {
       var hNome = '';
       if (m.liberadaHosp) {
@@ -1007,6 +1042,83 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(t._timer);
   t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── ROTA DE RECOLHA ──
+function abrirModalRota() {
+  var liberadas = state.machines.filter(function(m) { return m.liberada; });
+  if (liberadas.length === 0) {
+    showToast('Nenhuma máquina aguardando recolha!');
+    return;
+  }
+  document.getElementById('rotaSub').textContent =
+    liberadas.length + ' máquina(s) aguardando recolha.';
+  // Carrega endereço base salvo
+  var baseEnd = localStorage.getItem('baseEndereco') || '';
+  document.getElementById('rotaBaseEnd').value = baseEnd;
+  document.getElementById('modalRota').classList.add('open');
+}
+
+function toggleRotaPartida() {
+  var tipo = document.getElementById('rotaPartidaTipo').value;
+  document.getElementById('rotaBaseDiv').style.display   = tipo === 'base'   ? 'block' : 'none';
+  document.getElementById('rotaManualDiv').style.display = tipo === 'manual' ? 'block' : 'none';
+  document.getElementById('rotaGpsDiv').style.display    = tipo === 'gps'    ? 'block' : 'none';
+}
+
+function abrirRota() {
+  var tipo = document.getElementById('rotaPartidaTipo').value;
+  var liberadas = state.machines.filter(function(m) { return m.liberada; });
+
+  // Monta waypoints (hospitais das máquinas liberadas, sem duplicatas)
+  var hospIds = [];
+  var waypoints = [];
+  liberadas.forEach(function(m) {
+    var hid = m.liberadaHosp || m.hospital;
+    if (hid && hospIds.indexOf(hid) === -1) {
+      hospIds.push(hid);
+      var h = state.hospitals.find(function(x) { return x.id == hid; });
+      if (h) waypoints.push(h.lat + ',' + h.lng);
+    }
+  });
+
+  if (waypoints.length === 0) {
+    showToast('Hospitais não informados nas liberações!');
+    return;
+  }
+
+  if (tipo === 'base') {
+    var end = document.getElementById('rotaBaseEnd').value.trim();
+    if (!end) { showToast('Informe o endereço da base!'); return; }
+    localStorage.setItem('baseEndereco', end);
+    montarUrlRota(encodeURIComponent(end), waypoints);
+  } else if (tipo === 'manual') {
+    var endM = document.getElementById('rotaManualEnd').value.trim();
+    if (!endM) { showToast('Informe o endereço de partida!'); return; }
+    montarUrlRota(encodeURIComponent(endM), waypoints);
+  } else {
+    // GPS
+    if (!navigator.geolocation) { showToast('GPS não disponível!'); return; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var origem = pos.coords.latitude + ',' + pos.coords.longitude;
+      montarUrlRota(origem, waypoints);
+    }, function() {
+      showToast('Não foi possível obter sua localização.');
+    });
+  }
+}
+
+function montarUrlRota(origem, waypoints) {
+  // Google Maps directions URL com waypoints
+  var destino = waypoints[waypoints.length - 1];
+  var wps = waypoints.slice(0, -1);
+  var url = 'https://www.google.com/maps/dir/?api=1' +
+    '&origin=' + origem +
+    '&destination=' + destino +
+    (wps.length > 0 ? '&waypoints=' + wps.join('|') : '') +
+    '&travelmode=driving';
+  closeModal('modalRota');
+  window.open(url, '_blank');
 }
 
 // ── PRAZO VENCIDO ──
