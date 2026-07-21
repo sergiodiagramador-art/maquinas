@@ -1,20 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA RESTAURADO</title>
+    <title>SOS RIM</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
-        .btn { background: #1a73e8; color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: inline-block; margin-top: 20px; }
+        body { font-family: sans-serif; background: #f0f0f0; padding: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .card { background: white; border: 1px solid #ccc; padding: 20px; text-align: center; border-radius: 8px; }
+        .card.hospital { border-left: 5px solid red; }
+        .card.base { border-left: 5px solid green; }
     </style>
 </head>
 <body>
-    <h1>SISTEMA EM MANUTENÇÃO</h1>
-    <p>Estamos restaurando o banco de dados. Se você vê esta tela, a conexão voltou.</p>
-    <div onclick="location.reload()" class="btn">CLIQUE PARA RECARREGAR</div>
+    <h1 style="text-align:center">SOS RIM - Logística</h1>
+    <div id="grid" class="grid"></div>
     <script>
-        console.log("Versão de emergência carregada.");
+        var state = JSON.parse(localStorage.getItem('hm_state') || '{"machines":[]}');
+        if(!state.machines.length) { for(var i=1;i<=18;i++) state.machines.push({id:i, status:'base', hosp:''}); }
+        function save() { localStorage.setItem('hm_state', JSON.stringify(state)); }
+        function render() {
+            var h = '';
+            state.machines.forEach(m => {
+                h += '<div class="card '+m.status+'" onclick="go('+m.id+')"><h3>'+m.id+'</h3><small>'+(m.hosp||'Base')+'</small></div>';
+            });
+            document.getElementById('grid').innerHTML = h;
+        }
+        function go(id) {
+            var m = state.machines.find(x => x.id==id);
+            if(m.status=='base') {
+                var p = prompt('Para qual hospital?');
+                if(p) { m.status='hospital'; m.hosp=p; save(); render(); }
+            } else {
+                if(confirm('Voltou para base?')) { m.status='base'; m.hosp=''; save(); render(); }
+            }
+        }
+        render();
     </script>
 </body>
 </html>
