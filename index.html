@@ -1,470 +1,527 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Logística v1.1 ORIGINAL OK</title>
-    <style>
-/* CSS EXTRAIDO DA V1.1 */
-:root {
-  --primary: #1a73e8;
-  --bg: #f1f3f4;
-  --card: #ffffff;
-  --text: #202124;
-  --green: #34a853;
-  --red: #ea4335;
-  --orange: #fbbc04;
-  --grey: #70757a;
-}
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { 
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1565c0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Máquinas">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Controle de Máquinas</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; padding-bottom: 80px; }
+
 .header {
-  background: var(--primary);
+  background: #1a73e8;
   color: white;
-  padding: 16px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: sticky; top: 0; z-index: 50;
 }
-.view { display: none; padding: 16px; padding-bottom: 100px; }
-.view.active { display: block; animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.header .h1 { font-size: 17px; font-weight: 700; }
+.header .subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
 
-/* Grid de Máquinas */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 12px;
-}
-.machine-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  border: 2px solid transparent;
-  transition: transform 0.2s;
-}
-.machine-card.status-base { border-color: var(--primary); color: var(--primary); }
-.machine-card.status-rua { border-color: var(--orange); background: #fff8e1; }
-.machine-card.status-hospital { border-color: var(--green); background: #e8f5e9; }
-.machine-card.status-manutencao { border-color: var(--red); background: #ffebee; }
-
-.machine-id { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
-.machine-loc { font-size: 11px; font-weight: 500; height: 30px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-
-/* Navegação */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: fixed; bottom: 0; left: 0; right: 0;
   background: white;
+  border-top: 1px solid #ddd;
   display: flex;
-  justify-content: space-around;
-  padding: 10px 0;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-  z-index: 1000;
+  z-index: 50;
 }
 .nav-btn {
-  background: none;
-  border: none;
-  color: var(--grey);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 11px;
-  width: 20%;
+  flex: 1; padding: 10px 4px 8px;
+  text-align: center; font-size: 10px; font-weight: 600;
+  color: #888; cursor: pointer; transition: all 0.2s;
+  border: none; background: none;
 }
-.nav-btn.active { color: var(--primary); font-weight: bold; }
-.nav-btn .icon { font-size: 20px; margin-bottom: 2px; }
+.nav-btn .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+.nav-btn.active { color: #1a73e8; }
 
-/* Modais e UI */
-.modal {
-  display: none;
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.5);
-  z-index: 2000;
-  align-items: center;
-  justify-content: center;
+.view { display: none; padding: 14px; }
+.view.active { display: block; }
+
+/* Cards */
+.card {
+  background: white; border-radius: 12px;
+  padding: 14px; margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.modal-content {
-  background: white;
-  width: 90%;
-  max-width: 400px;
-  border-radius: 16px;
-  padding: 20px;
+.card-title { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 10px; }
+
+/* Driver select */
+.driver-select {
+  width: 100%; padding: 11px 12px;
+  border: 2px solid #ddd; border-radius: 10px;
+  font-size: 15px; background: white; color: #333;
 }
+.driver-select:focus { outline: none; border-color: #1a73e8; }
+
+/* Machines grid */
+.machines-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.machine-card {
+  background: white; border-radius: 10px; padding: 12px 6px;
+  text-align: center; cursor: pointer;
+  border: 2px solid #e0e0e0;
+  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.machine-card:active { transform: scale(0.95); }
+.machine-card.na-base { border-color: #34a853; background: #f0fff4; }
+.machine-card.fora { border-color: #ea4335; background: #fff5f5; }
+.machine-card.liberada { border-color: #f9ab00; background: #fffde7; animation: blink-border 1.2s infinite; }
+.machine-card.vencida { border-color: #ea4335; background: #ff1a1a; animation: blink-vencida 0.6s infinite; }
+@keyframes blink-border { 0%,100% { border-color: #f9ab00; background: #fffde7; } 50% { border-color: #ff6d00; background: #fff3cd; } }
+@keyframes blink-vencida { 0%,100% { background: #ff1a1a; border-color: #b71c1c; } 50% { background: #ff6b6b; border-color: #ea4335; } }
+.machine-card.vencida .num { color: white; }
+.machine-card.vencida .slabel { background: #b71c1c !important; color: white; }
+.machine-card.vencida .dname { color: rgba(255,255,255,0.85); }
+.machine-card .num { font-size: 20px; font-weight: 700; color: #333; }
+.machine-card .slabel {
+  font-size: 9px; font-weight: 700; margin-top: 4px;
+  padding: 2px 5px; border-radius: 20px; display: inline-block;
+}
+.na-base .slabel { background: #34a853; color: white; }
+.fora .slabel { background: #ea4335; color: white; }
+.liberada .slabel { background: #f9ab00; color: white; }
+.machine-card .dname { font-size: 9px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat-card { background: white; border-radius: 10px; padding: 12px 8px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.stat-card .val { font-size: 26px; font-weight: 700; }
+.stat-card .lbl { font-size: 10px; color: #888; margin-top: 2px; }
+.stat-card.total .val { color: #1a73e8; }
+.stat-card.base .val { color: #34a853; }
+.stat-card.fora-s .val { color: #ea4335; }
+
+/* Panel list */
+.panel-item {
+  background: white; border-radius: 10px; padding: 11px 13px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border-left: 4px solid #34a853; margin-bottom: 7px;
+}
+.panel-item.fora { border-left-color: #ea4335; }
+.panel-item.liberada { border-left-color: #f9ab00; }
+.panel-item.liberada .mstatus { color: #f9ab00; }
+.panel-item .mnum { font-size: 18px; font-weight: 700; color: #333; min-width: 32px; }
+.panel-item .minfo { flex: 1; }
+.panel-item .mstatus { font-size: 12px; font-weight: 600; }
+.panel-item.fora .mstatus { color: #ea4335; }
+.panel-item:not(.fora) .mstatus { color: #34a853; }
+.panel-item .mdetail { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* Hospitals */
+.hospital-item {
+  background: white; border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 7px;
+}
+.hospital-item .hicon { font-size: 22px; }
+.hospital-item .hinfo { flex: 1; }
+.hospital-item .hname { font-size: 14px; font-weight: 600; color: #222; }
+.hospital-item .hcoord { font-size: 10px; color: #888; margin-top: 2px; }
+.hospital-item .hdel { background: none; border: none; font-size: 18px; cursor: pointer; color: #ccc; padding: 4px; }
+.hospital-item .hdel:active { color: #ea4335; }
+
+/* History */
+.hist-item {
+  background: white; border-radius: 10px; padding: 11px 13px;
+  display: flex; align-items: flex-start; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 7px;
+}
+.hist-item .hbadge {
+  font-size: 10px; font-weight: 700; padding: 3px 7px;
+  border-radius: 20px; white-space: nowrap; margin-top: 2px;
+}
+.hist-item .hbadge.saida { background: #ea4335; color: white; }
+.hist-item .hbadge.retorno { background: #34a853; color: white; }
+.hist-item .hbadge.material { background: #f9ab00; color: white; }
+.hist-item .hbadge.fechamento { background: #1a73e8; color: white; }
+.hist-item .htext { flex: 1; font-size: 12px; color: #333; line-height: 1.5; }
+.hist-item .htime { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+/* Fechamento */
+.fechamento-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 14px;
+}
+.fech-card {
+  border-radius: 8px; padding: 10px 5px;
+  text-align: center; cursor: pointer;
+  border: 2px solid #e0e0e0; background: white;
+  transition: all 0.15s;
+}
+.fech-card:active { transform: scale(0.95); }
+.fech-card.na-base { border-color: #34a853; background: #f0fff4; }
+.fech-card.fora { border-color: #ea4335; background: #fff5f5; }
+.fech-card .fnum { font-size: 18px; font-weight: 700; color: #333; }
+.fech-card .fstatus { font-size: 9px; font-weight: 700; margin-top: 3px; }
+.fech-card.na-base .fstatus { color: #34a853; }
+.fech-card.fora .fstatus { color: #ea4335; }
+
+/* Buttons */
 .btn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  font-weight: bold;
-  font-size: 16px;
+  width: 100%; padding: 13px; border: none; border-radius: 11px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s; margin-bottom: 8px;
 }
-.btn-blue { background: var(--primary); color: white; }
-.btn-green { background: var(--green); color: white; }
-.btn-orange { background: var(--orange); color: white; }
-.btn-red { background: var(--red); color: white; }
-.btn-outline { background: none; border: 1px solid var(--grey); color: var(--grey); }
-
-.hospital-list { background: white; border-radius: 12px; overflow: hidden; }
-.hospital-item { padding: 16px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
-.hospital-item:last-child { border-bottom: none; }
-
-/* Painel de resumo */
-.summary-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.btn:active { opacity: 0.75; }
+.btn-primary { background: #1a73e8; color: white; }
+.btn-green  { background: #34a853; color: white; }
+.btn-red    { background: #ea4335; color: white; }
+.btn-yellow { background: #f9ab00; color: white; }
+.btn-gray   { background: #f0f0f0; color: #555; }
+.modal input[type=text] {
+  width: 100%; padding: 11px 12px; border: 1.5px solid #ddd;
+  border-radius: 10px; font-size: 15px; margin-bottom: 10px; outline: none;
 }
-.stat { text-align: center; flex: 1; }
-.stat-val { font-size: 24px; font-weight: bold; display: block; }
-.stat-label { font-size: 12px; color: var(--grey); }
+.modal input[type=text]:focus { border-color: #1a73e8; }
+.modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+.alerta-lib {
+  background: #fffde7; border: 1.5px solid #f9ab00; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+}
+.alerta-lib.vencida {
+  background: #ff1a1a; border-color: #b71c1c;
+  animation: blink-vencida 0.8s infinite;
+}
+.alerta-lib.vencida .anum { color: white; }
+.alerta-lib.vencida .atitle { color: white; font-size: 15px; }
+.alerta-lib.vencida .adet { color: rgba(255,255,255,0.85); }
+.alerta-lib .anum { font-size: 20px; font-weight: 700; color: #333; min-width: 30px; }
+.alerta-lib .ainfo { flex: 1; }
+.alerta-lib .atitle { font-size: 13px; font-weight: 700; color: #e65100; }
+.alerta-lib .adet { font-size: 11px; color: #888; margin-top: 2px; }
 
-#view-historico { font-size: 13px; }
-.hist-item { padding: 10px; border-bottom: 1px solid #ddd; }
-    </style>
+#bannerVencidas {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #b71c1c; color: white; text-align: center;
+  padding: 10px 16px; font-size: 14px; font-weight: 700;
+  animation: blink-banner 0.8s infinite;
+  cursor: pointer;
+}
+@keyframes blink-banner { 0%,100% { background: #b71c1c; } 50% { background: #ef5350; } }
+.btn-yellow { background: #f9ab00; color: white; }
+
+input[type=text], textarea {
+  width: 100%; padding: 11px 12px;
+  border: 2px solid #ddd; border-radius: 10px;
+  font-size: 14px; color: #333; margin-bottom: 8px;
+  font-family: inherit;
+}
+input[type=text]:focus, textarea:focus { outline: none; border-color: #1a73e8; }
+textarea { resize: vertical; min-height: 70px; }
+
+label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; display: block; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 100;
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 20px 20px 0 0;
+  padding: 22px; width: 100%; max-width: 480px;
+  animation: slideUp 0.22s ease; max-height: 90vh; overflow-y: auto;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal h2 { font-size: 19px; margin-bottom: 5px; color: #222; }
+.modal .modal-sub { font-size: 13px; color: #777; margin-bottom: 16px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%);
+  background: #333; color: white;
+  padding: 10px 18px; border-radius: 20px;
+  font-size: 13px; z-index: 200;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+.warn-box {
+  background: #fff3cd; border: 1px solid #ffc107;
+  border-radius: 10px; padding: 11px 13px;
+  font-size: 12px; color: #856404; margin-bottom: 12px;
+}
+
+.section-label {
+  font-size: 11px; font-weight: 700; color: #999;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin: 14px 0 8px;
+}
+
+.gps-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #34a853; margin-bottom: 10px;
+}
+.gps-dot { width: 8px; height: 8px; border-radius: 50%; background: #34a853; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.nearby-banner {
+  background: #e8f5e9; border: 2px solid #34a853;
+  border-radius: 12px; padding: 13px;
+  margin-bottom: 12px; display: none;
+}
+.nearby-banner .nb-title { font-size: 14px; font-weight: 700; color: #1b5e20; }
+.nearby-banner .nb-sub { font-size: 12px; color: #388e3c; margin-top: 3px; }
+
+.empty-state { text-align: center; padding: 30px 20px; color: #aaa; font-size: 13px; }
+.empty-state .ei { font-size: 36px; margin-bottom: 8px; }
+</style>
 </head>
 <body>
+<div id="bannerVencidas" onclick="switchView('painel')">🚨 RECOLHA ATRASADA! Toque para ver</div>
 
-<div class="header" id="main-header">Logística Hospitalar</div>
+<div class="header">
+  <div class="h1">🏥 Controle de Máquinas</div>
+  <div class="subtitle" id="headerSub">Selecione o motorista</div>
+</div>
 
-<!-- Motorista / Home -->
+<!-- VIEWS -->
 <div id="view-home" class="view active">
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button class="btn btn-orange" style="margin:0; flex:1; height:60px; font-size:14px;" onclick="iniciarSaidaColetiva()">⬆️ Retirar Máquinas</button>
-        <button class="btn btn-blue" style="margin:0; flex:1; height:60px; font-size:14px;" onclick="iniciarRetornoColetivo()">⬇️ Inserir Máquinas</button>
+
+  <!-- Banner: salvar na tela inicial -->
+  <div id="installBanner" style="display:none;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:#1a73e8">📲 Salvar na tela inicial</div>
+      <div style="font-size:11px;color:#555;margin-top:2px" id="installInstr">Toque no botão abaixo para instalar o app.</div>
     </div>
-<div class="grid" id="grid-motorista"></div>
+    <button id="installBtn" onclick="doInstall()" style="background:#1a73e8;color:white;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Instalar</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:none;border:none;font-size:18px;color:#aaa;cursor:pointer;padding:4px">✕</button>
+  </div>
+
+  <div class="card">
+    <label>Quem é você?</label>
+    <select class="driver-select" id="driverSelect" onchange="onDriverChange()">
+      <option value="">— Selecione o motorista —</option>
+      <option value="Motorista 1">Motorista 1</option>
+      <option value="Motorista 2">Motorista 2</option>
+      <option value="Motorista 3">Motorista 3</option>
+    </select>
+  </div>
+
+  <div class="nearby-banner" id="nearbyBanner">
+    <div class="nb-title" id="nearbyTitle">📍 Você está próximo de um hospital!</div>
+    <div class="nb-sub" id="nearbySub">Toque para registrar movimentação</div>
+    <button class="btn btn-green" style="margin-top:10px;margin-bottom:0" onclick="openNearbyModal()">Registrar agora</button>
+  </div>
+
+  <div class="section-label">Máquinas</div>
+  <div class="machines-grid" id="machinesGrid"></div>
+
+  <div style="margin-top:14px">
+    <button class="btn btn-yellow" onclick="openMaterialModal()">📦 Registrar outro material</button>
+  </div>
 </div>
 
-<!-- Painel -->
 <div id="view-painel" class="view">
-    <div class="summary-card">
-        <div class="stat"><span class="stat-val" id="count-base">0</span><span class="stat-label">Na Base</span></div>
-        <div class="stat"><span class="stat-val" id="count-rua" style="color:var(--orange)">0</span><span class="stat-label">Rua</span></div>
-        <div class="stat"><span class="stat-val" id="count-hosp" style="color:var(--green)">0</span><span class="stat-label">Hospital</span></div>
-    </div>
-    <div class="grid" id="grid-painel"></div>
+  <div class="stats">
+    <div class="stat-card total"><div class="val" id="statTotal">18</div><div class="lbl">Total</div></div>
+    <div class="stat-card base"><div class="val" id="statBase">18</div><div class="lbl">Na base</div></div>
+    <div class="stat-card fora-s"><div class="val" id="statFora">0</div><div class="lbl">Fora</div></div>
+  </div>
+  <div id="painelAlertas"></div>
+  <div class="section-label">Status das máquinas</div>
+  <div id="panelList"></div>
 </div>
 
-<!-- Hospitais -->
-<div id="view-hospitais" class="view">
-    <div style="margin-bottom: 20px;">
-        <button class="btn btn-green" style="width:100%; margin:0;" onclick="adicionarNovoHospital()">➕ Cadastrar Novo Hospital</button>
+<!-- Modal: rota de recolha -->
+<div class="modal-overlay" id="modalRota" onclick="closeModalBg(event,'modalRota')">
+  <div class="modal">
+    <h2>🗺️ Rota de recolha</h2>
+    <div class="modal-sub" id="rotaSub"></div>
+    <div style="margin-bottom:12px">
+      <label>Ponto de partida</label>
+      <select class="driver-select" id="rotaPartidaTipo" onchange="toggleRotaPartida()" style="margin-bottom:8px">
+        <option value="base">🏭 Base (endereço fixo)</option>
+        <option value="gps">📍 Minha localização atual (GPS)</option>
+        <option value="manual">✏️ Digitar endereço</option>
+      </select>
+      <div id="rotaBaseDiv">
+        <input type="text" id="rotaBaseEnd" placeholder="Ex: Rua das Flores, 100, Curitiba">
+        <div style="font-size:11px;color:#888;margin-top:-6px;margin-bottom:8px">Endereço da base — salvo automaticamente</div>
+      </div>
+      <div id="rotaManualDiv" style="display:none">
+        <input type="text" id="rotaManualEnd" placeholder="Ex: Av. Sete de Setembro, 500, Curitiba">
+      </div>
+      <div id="rotaGpsDiv" style="display:none">
+        <div style="font-size:12px;color:#34a853;padding:8px 0">📍 Será usada sua localização GPS atual</div>
+      </div>
     </div>
-
-    <h3 style="margin-top:0">Lista de Hospitais (15)</h3>
-    <div class="hospital-list" id="list-hospitais"></div>
+    <button class="btn btn-primary" onclick="abrirRota('maps')">🗺️ Abrir no Google Maps</button>
+    <button class="btn btn-primary" style="background:#05c8f5" onclick="abrirRota('waze')">🚕 Abrir no Waze</button>
+    <button class="btn btn-gray" onclick="closeModal('modalRota')">Fechar</button>
+  </div>
 </div>
 
-<!-- Histórico -->
+<div id="view-hospitais" class="view"><button class="btn btn-green" style="width:100%;" onclick="addHosp()">➕ Novo Hospital</button><div id="lista-hospitais"></div>
+  <div class="gps-indicator" id="gpsIndicator" style="display:none">
+    <div class="gps-dot"></div> GPS ativo
+  </div>
+  <button class="btn btn-primary" onclick="cadastrarHospital()">📍 Cadastrar hospital nesta localização</button>
+  <div class="section-label">Hospitais cadastrados</div>
+  <div id="hospitalList"></div>
+</div>
+
 <div id="view-historico" class="view">
-    <h3>Últimas Movimentações</h3>
-    <div id="log-content">Nenhuma movimentação hoje.</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div class="section-label" style="margin:0">Movimentações</div>
+    <button onclick="clearHistory()" style="background:none;border:none;font-size:12px;color:#ea4335;cursor:pointer">Limpar</button>
+  </div>
+  <div id="histList"></div>
 </div>
 
-<!-- Fechamento -->
 <div id="view-fechamento" class="view">
-    <h3>Fechamento de Plantão</h3>
-    <p>Verifique o status final de todas as 18 máquinas.</p>
-    <div class="grid" id="grid-fechamento"></div>
-    <button class="btn btn-blue" style="margin-top:20px" onclick="exportarRelatorio()">Gerar Relatório WhatsApp</button>
+  <div class="card">
+    <div class="card-title">📋 Fechamento do expediente</div>
+    <p style="font-size:13px;color:#666;margin-bottom:14px">Confirme o status de cada máquina ao final do dia.</p>
+    <div class="fechamento-grid" id="fechGrid"></div>
+    <div style="margin-top:6px">
+      <label>Observações (opcional)</label>
+      <textarea id="fechObs" placeholder="Ex: Máquina 05 ficou no Hospital São Lucas para manutenção..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="confirmarFechamento()">✅ Confirmar fechamento do dia</button>
+  </div>
+
+  <!-- Backup -->
+  <div class="card" style="margin-top:0">
+    <div class="card-title">💾 Backup dos dados</div>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">Salve um arquivo com todos os dados para não perder nada se trocar de celular ou limpar o navegador.</p>
+    <button class="btn btn-primary" onclick="exportarBackup()">💾 Exportar backup</button>
+    <label style="margin-top:8px;display:block">
+      <div class="btn" style="background:#f0f0f0;color:#555;text-align:center;margin-bottom:0;cursor:pointer">📂 Importar backup</div>
+      <input type="file" accept=".html" id="importFile" style="display:none" onchange="importarBackup(event)">
+    </label>
+  </div>
+
+  <div id="fechHistList"></div>
 </div>
 
-<!-- Barra de Navegação -->
+<!-- Bottom Nav -->
 <div class="bottom-nav">
-  <button id="nav-home" class="nav-btn active" onclick="switchView('home')"><span class="icon">🚗</span>Motorista</button>
-  <button id="nav-painel" class="nav-btn" onclick="switchView('painel')"><span class="icon">📊</span>Painel</button>
-  <button id="nav-hospitais" class="nav-btn" onclick="switchView('hospitais')"><span class="icon">📍</span>Hospitais</button>
-  <button id="nav-historico" class="nav-btn" onclick="switchView('historico')"><span class="icon">📋</span>Histórico</button>
-  <button id="nav-fechamento" class="nav-btn" onclick="switchView('fechamento')"><span class="icon">🔒</span>Fechamento</button>
+  <button class="nav-btn active" onclick="switchView('home')"><span class="icon">🚗</span>Motorista</button>
+  <button class="nav-btn" onclick="switchView('painel')"><span class="icon">📊</span>Painel</button>
+  <button class="nav-btn" onclick="switchView('hospitais')"><span class="icon">📍</span>Hospitais</button>
+  <button class="nav-btn" onclick="switchView('historico')"><span class="icon">📋</span>Histórico</button>
+  <button class="nav-btn" onclick="switchView('fechamento')"><span class="icon">🔒</span>Fechar dia</button>
 </div>
 
-<!-- Modal de Ação -->
-<div class="modal" id="modal-acao">
-    <div class="modal-content">
-        <h3 id="modal-title">Máquina XX</h3>
-        <p>Selecione o novo status:</p>
-        <button class="btn btn-blue" onclick="setStatus('base')">Na Base</button>
-        <button class="btn btn-orange" onclick="setStatus('rua')">Em Trânsito (Rua)</button>
-        <button class="btn btn-green" onclick="abrirHospitais()">No Hospital</button>
-        <button class="btn btn-red" onclick="setStatus('manutencao')">Manutenção</button>
-        <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+<!-- Modal: máquina -->
+<div class="modal-overlay" id="modalMaquina" onclick="closeModalBg(event,'modalMaquina')">
+  <div class="modal">
+    <h2 id="maqTitle">Máquina 01</h2>
+    <div class="modal-sub" id="maqStatus"></div>
+    <div id="maqHospitalSel" style="margin-bottom:10px;display:none">
+      <label>Hospital de destino</label>
+      <select class="driver-select" id="maqHospital" style="margin-bottom:0"></select>
     </div>
+    <button class="btn btn-red" id="btnSaida" onclick="regMovimento('saida')">📤 Registrar SAÍDA</button>
+    <button class="btn btn-green" id="btnRetorno" onclick="regMovimento('retorno')">📥 Registrar RETORNO à base</button>
+    <button class="btn btn-yellow" id="btnLiberar" onclick="abrirModalLiberar()">🔔 Liberar para recolha</button>
+    <button class="btn btn-gray" id="btnCancelarLib" onclick="cancelarLiberacao()" style="display:none">❌ Cancelar liberação</button>
+    <button class="btn btn-gray" onclick="closeModal('modalMaquina')">Fechar</button>
+  </div>
 </div>
 
-<!-- Modal de Seleção de Hospital -->
-<div class="modal" id="modal-hospital">
-    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-        <h3>Selecionar Hospital</h3>
-        <div id="hospital-select-list"></div>
-        <button class="btn btn-outline" onclick="voltarParaAcoes()">Voltar</button>
+<!-- Modal: liberação -->
+<div class="modal-overlay" id="modalLiberar" onclick="closeModalBg(event,'modalLiberar')">
+  <div class="modal">
+    <h2>🔔 Liberar para recolha</h2>
+    <div class="modal-sub" id="liberarSub">A máquina está pronta para ser recolhida.</div>
+    <label>Hospital onde está a máquina</label>
+    <select class="driver-select" id="liberarHospital" style="margin-bottom:10px"></select>
+    <label>Horário de liberação</label>
+    <input type="text" id="liberarHora" placeholder="Ex: 14:30">
+    <label>⏰ Recolher até (prazo)</label>
+    <input type="text" id="liberarPrazo" placeholder="Ex: 15:30 — pisca vermelho se vencer">
+    <label>Observação (opcional)</label>
+    <input type="text" id="liberarObs" placeholder="Ex: Aguardando na recepção">
+    <button class="btn btn-yellow" onclick="confirmarLiberacao()">🔔 Confirmar liberação</button>
+    <button class="btn btn-gray" onclick="closeModal('modalLiberar')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: material -->
+<div class="modal-overlay" id="modalMaterial" onclick="closeModalBg(event,'modalMaterial')">
+  <div class="modal">
+    <h2>📦 Outro material</h2>
+    <div class="modal-sub">Registre outros itens levados ou trazidos</div>
+    <label>Tipo de movimentação</label>
+    <select class="driver-select" id="matTipo" style="margin-bottom:10px">
+      <option value="saida">📤 Saída da base</option>
+      <option value="retorno">📥 Retorno à base</option>
+    </select>
+    <label>Descrição do material</label>
+    <input type="text" id="matDesc" placeholder="Ex: 2 cilindros de oxigênio, caixa de insumos...">
+    <div id="matHospSel">
+      <label>Hospital (opcional)</label>
+      <select class="driver-select" id="matHospital" style="margin-bottom:10px"></select>
     </div>
+    <button class="btn btn-yellow" onclick="regMaterial()">Registrar material</button>
+    <button class="btn btn-gray" onclick="closeModal('modalMaterial')">Cancelar</button>
+  </div>
 </div>
 
+<!-- Modal: cadastrar hospital -->
+<div class="modal-overlay" id="modalHospital" onclick="closeModalBg(event,'modalHospital')">
+  <div class="modal">
+    <h2>📍 Novo hospital</h2>
+    <div class="modal-sub" id="hospCoordSub"></div>
+    <label>Nome do hospital</label>
+    <input type="text" id="hospNome" placeholder="Ex: Hospital São Lucas">
+    <label>Raio de detecção (metros)</label>
+    <input type="text" id="hospRaio" value="200">
+    <button class="btn btn-primary" onclick="salvarHospital()">Salvar hospital</button>
+    <button class="btn btn-gray" onclick="closeModal('modalHospital')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: chegou ao hospital -->
+<div class="modal-overlay" id="modalChegou">
+  <div class="modal">
+    <h2 id="chegouTitle">🏥 Você chegou!</h2>
+    <div class="modal-sub" id="chegouSub"></div>
+    <button class="btn btn-red" onclick="chegouAction('saida')">📤 Deixei máquinas</button>
+    <button class="btn btn-green" onclick="chegouAction('retorno')">📥 Recolhi máquinas</button>
+    <button class="btn btn-yellow" onclick="chegouAction('material')">📦 Levei/trouxe material</button>
+    <button class="btn btn-gray" onclick="chegouAction('nada')">Nenhuma movimentação</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-    const HOSPITAIS = ["Buenos Aires, 792", 
-        "Hospital Erasto Gaertner", "Hospital Erastinho", "Hospital Pilar", 
-        "Hospital N. Sra. das Graças", "Hospital Marcelino Champagnat", "Hospital INC Ecoville",
-        "Hospital do Trabalhador",
-        "Maternidade Marillac", "Hospital Fraturas - Alto da XV",
-        "Hospital Oswaldo Cruz", "Hospital São Lucas", "Yoshimi"
-    ];
-
-    let state = {
-        machines: [],
-        logs: []
-    };
-
-    let activeMachineId = null;
-
-    function init() {
-        // Carregar ou Criar Estado
-        const saved = localStorage.getItem('logistica_v11_state');
-        if (saved) {
-            state = JSON.parse(saved);
-            // Garantir que temos 18 máquinas se o estado for de uma versão anterior
-            if (state.machines.length < 18) {
-                for (let i = state.machines.length + 1; i <= 18; i++) {
-                    state.machines.push({ id: i, status: 'base', hospital: '' });
-                }
-            }
-        } else {
-            for (let i = 1; i <= 18; i++) {
-                state.machines.push({ id: i, status: 'base', hospital: '' });
-            }
-        }
-        renderHospitals();
-        renderAll();
-    }
-
-    function save() {
-        localStorage.setItem('logistica_v11_state', JSON.stringify(state));
-    }
-
-    
-    function renderHospitals() {
-        const container = document.getElementById('lista-hospitais');
-        if (!container) return;
-        container.innerHTML = '';
-        state.hospitals.sort().forEach(h => {
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.style.display = 'flex';
-            div.style.justifyContent = 'space-between';
-            div.style.alignItems = 'center';
-            div.style.marginBottom = '8px';
-            div.innerHTML = `
-                <span>${h}</span>
-                <button class="btn btn-red" style="margin:0; padding:5px 10px; font-size:12px;" onclick="excluirHospital('${h}')">Excluir</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-</div>`).join('');
-        
-        const selectList = document.getElementById('hospital-select-list');
-        selectList.innerHTML = HOSPITAIS.map(h => `
-            <button class="btn btn-outline" style="text-align:left; padding:10px; font-size:14px;" onclick="setStatus('hospital', '${h}')">${h}</button>
-        `).join('');
-    }
-
-    function renderAll() {
-        renderGrid('grid-motorista', true);
-        renderGrid('grid-painel', false);
-        renderGrid('grid-fechamento', false);
-        updateCounters();
-        renderLogs();
-    }
-
-    function renderGrid(containerId, interactive) {
-        const grid = document.getElementById(containerId);
-        grid.innerHTML = state.machines.map(m => `
-            <div class="machine-card status-${m.status}" ${interactive ? `onclick="abrirAcoes(${m.id})"` : ''}>
-                <div class="machine-id">${m.id}</div>
-                <div class="machine-loc">${m.status === 'hospital' ? m.hospital : (m.status === 'base' ? 'BASE' : (m.status === 'rua' ? 'TRANSITO' : 'MANUT.'))}</div>
-            </div>
-        `).join('');
-    }
-
-    function updateCounters() {
-        document.getElementById('count-base').textContent = state.machines.filter(m => m.status === 'base').length;
-        document.getElementById('count-rua').textContent = state.machines.filter(m => m.status === 'rua').length;
-        document.getElementById('count-hosp').textContent = state.machines.filter(m => m.status === 'hospital').length;
-    }
-
-    function renderLogs() {
-        const logBox = document.getElementById('log-content');
-        if (state.logs.length === 0) {
-            logBox.innerHTML = "Nenhuma movimentação.";
-            return;
-        }
-        logBox.innerHTML = state.logs.slice(-20).reverse().map(l => `
-            <div class="hist-item"><b>${l.time}:</b> Máquina ${l.id} -> ${l.msg}</div>
-        `).join('');
-    }
-
-    function abrirAcoes(id) {
-        activeMachineId = id;
-        document.getElementById('modal-title').textContent = "Máquina " + id;
-        document.getElementById('modal-acao').style.display = 'flex';
-    }
-
-    function fecharModal() {
-        document.getElementById('modal-acao').style.display = 'none';
-        document.getElementById('modal-hospital').style.display = 'none';
-    }
-
-    function abrirHospitais() {
-        document.getElementById('modal-acao').style.display = 'none';
-        document.getElementById('modal-hospital').style.display = 'flex';
-    }
-
-    function voltarParaAcoes() {
-        document.getElementById('modal-hospital').style.display = 'none';
-        document.getElementById('modal-acao').style.display = 'flex';
-    }
-
-    function setStatus(status, hospital = '') {
-        const m = state.machines.find(x => x.id === activeMachineId);
-        const msg = hospital ? "Hospital: " + hospital : (status === 'base' ? "Voltou para Base" : (status === 'rua' ? "Saiu para Rua" : "Manutenção"));
-        
-        m.status = status;
-        m.hospital = hospital;
-        
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        state.logs.push({ id: activeMachineId, time: timeStr, msg: msg });
-        
-        save();
-        renderAll();
-        fecharModal();
-    }
-
-    function switchView(viewId) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        
-        document.getElementById('view-' + viewId).classList.add('active');
-        document.getElementById('nav-' + viewId).classList.add('active');
-        
-        const titles = { home: 'Motorista', painel: 'Painel Geral', hospitais: 'Hospitais', historico: 'Histórico', fechamento: 'Fechamento' };
-        document.getElementById('main-header').textContent = titles[viewId];
-    }
-
-    function exportarRelatorio() {
-        let txt = "*RELATÓRIO DE LOGÍSTICA*\n\n";
-        state.machines.forEach(m => {
-            let status = m.status === 'hospital' ? m.hospital : (m.status === 'base' ? 'BASE' : (m.status === 'rua' ? 'RUA' : 'MANUT.'));
-            txt += `Máquina ${m.id}: ${status}\n`;
-        });
-        const url = "https://wa.me/?text=" + encodeURIComponent(txt);
-        window.open(url, '_blank');
-    }
-
-    
-    
-        }
-        
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        state.logs.push({ id: 'Lote', time: timeStr, msg: `SAÍDA COLETIVA: ${alteradas} máquinas para ${destino || 'Rua'}` });
-        
-        save();
-        renderAll();
-        alert(`${alteradas} máquinas marcadas em saída.`);
-    }
-
-    
-        }
-        
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        state.logs.push({ id: 'Lote', time: timeStr, msg: `RETORNO COLETIVO: ${alteradas} máquinas voltaram para base` });
-        
-        save();
-        renderAll();
-        alert(`${alteradas} máquinas retornaram para a base.`);
-    }
-
-    
-    function getDriver() { return document.getElementById('active-driver').value; }
-    function iniciarSaidaColetiva() {
-        const d = getDriver();
-        const q = prompt(d + ", com quantas máquinas você está saindo?");
-        if(!q || isNaN(q) || q <= 0) return;
-        const dest = prompt("Para qual hospital?");
-        let count = 0;
-        for(let m of state.machines) {
-            if(m.status==='base' && count < q) { m.status = dest?'hospital':'rua'; m.hospital=dest||''; count++; }
-        }
-        state.logs.push({id:'Lote', time: new Date().toLocaleTimeString().slice(0,5), msg: `SAÍDA: ${d} levou ${count} para ${dest||'Rua'}`});
-        save(); renderAll();
-    }
-    function iniciarRetornoColetivo() {
-        const d = getDriver();
-        const q = prompt(d + ", quantas máquinas estão retornando?");
-        if(!q || isNaN(q) || q <= 0) return;
-        let count = 0;
-        for(let m of state.machines) {
-            if(m.status!=='base' && m.status!=='manutencao' && count < q) { m.status='base'; m.hospital=''; count++; }
-        }
-        state.logs.push({id:'Lote', time: new Date().toLocaleTimeString().slice(0,5), msg: `RETORNO: ${d} trouxe ${count} para base`});
-        save(); renderAll();
-    }
-
-    
-    function adicionarNovoHospital() {
-        const nome = prompt("Digite o nome do novo hospital:");
-        if (!nome || nome.trim() === "") return;
-        
-        if (state.hospitals.includes(nome)) {
-            alert("Este hospital já existe na lista.");
-            return;
-        }
-        
-        state.hospitals.push(nome);
-        save();
-        renderAll();
-        alert(`Hospital "${nome}" adicionado com sucesso!`);
-    }
-
-    
-    function excluirHospital(nome) {
-        if (confirm(`Tem certeza que deseja excluir o hospital "${nome}"?`)) {
-            state.hospitals = state.hospitals.filter(h => h !== nome);
-            save();
-            renderAll();
-        }
-    }
-
-    init();
+let state; const IH = ["Nossa Saúde","Hospital das Nações","Hospital Erasto Gaertner","Hospital Erastinho","Hospital Pilar","Hospital N. Sra. das Graças","Hospital Marcelino Champagnat","Hospital INC Ecoville","Hospital do Trabalhador","Maternidade Marillac","Hospital Fraturas - Alto da XV","Hospital Oswaldo Cruz","Hospital São Lucas","Yoshimi","Buenos Aires, 792"];
+function save(){localStorage.setItem('hm_stable_final_v1',JSON.stringify(state));}
+function init(){const s=localStorage.getItem('hm_stable_final_v1');if(s){state=JSON.parse(s);}else{state={machines:[],hospitals:IH,logs:[]};for(let i=1;i<=18;i++)state.machines.push({id:i,status:'base',hospital:''});save();}renderAll();}
+function renderAll(){renderGrid();renderHospList();renderLogs();renderPanel();}
+function renderGrid(){const g=document.getElementById('grid-motorista');if(!g)return;g.innerHTML=state.machines.map(m=>`<div class="machine-card ${m.status}" onclick="abrirModal(${m.id})"><strong>${m.id}</strong><br><small>${m.status==='hospital'?m.hospital:m.status.toUpperCase()}</small></div>`).join('');}
+function renderHospList(){const l=document.getElementById('lista-hospitais');if(!l)return;l.innerHTML=state.hospitals.sort().map(h=>`<div class="card" style="display:flex;justify-content:space-between;padding:10px;margin:5px 0;"><span>${h}</span><button class="btn btn-red" style="margin:0;padding:2px 8px;" onclick="delHosp('${h}')">X</button></div>`).join('');}
+function renderLogs(){const h=document.getElementById('lista-historico');if(!h)return;h.innerHTML=state.logs.slice().reverse().map(l=>`<div><small>${l.time}</small> ${l.msg}</div>`).join('');}
+function renderPanel(){const p=document.getElementById('panel-grid');if(!p)return;p.innerHTML=state.machines.map(m=>`<div class="machine-card ${m.status}"><strong>${m.id}</strong><br><small>${m.status==='hospital'?m.hospital:m.status.toUpperCase()}</small></div>`).join('');}
+function saidaLote(){const drv=document.getElementById('active-driver').value;const q=prompt(`${drv}, quantas máquinas?`);if(!q)return;const h=prompt("Hospital?");let c=0;for(let m of state.machines){if(m.status==='base'&&c<q){m.status=h?'hospital':'rua';m.hospital=h||'';c++;}}state.logs.push({time:new Date().toLocaleTimeString().slice(0,5),msg:`LOTE: ${drv} levou ${c} p/ ${h||'Rua'}`});save();renderAll();}
+function retornoLote(){const drv=document.getElementById('active-driver').value;const q=prompt(`${drv}, quantas?`);if(!q)return;let c=0;for(let m of state.machines){if(m.status!=='base'&&m.status!=='manutencao'&&c<q){m.status='base';m.hospital='';c++;}}state.logs.push({time:new Date().toLocaleTimeString().slice(0,5),msg:`LOTE: ${drv} trouxe ${c} p/ Base`});save();renderAll();}
+function addHosp(){const n=prompt("Nome:");if(n){state.hospitals.push(n);save();renderAll();}}
+function delHosp(n){if(confirm(`Excluir ${n}?`)){state.hospitals=state.hospitals.filter(h=>h!==n);save();renderAll();}}
+function abrirModal(id){window.activeMachineId=id;document.getElementById('modal-title').textContent='Máquina '+id;document.getElementById('select-hospital').innerHTML='<option value="">Hospital...</option>'+state.hospitals.sort().map(h=>`<option value="${h}">${h}</option>`).join('');document.getElementById('modal').style.display='flex';}
+function fecharModal(){document.getElementById('modal').style.display='none';}
+function updateStatus(st){const m=state.machines.find(x=>x.id===activeMachineId);const h=document.getElementById('select-hospital').value;const drv=document.getElementById('active-driver').value;if(st==='hospital'&&!h)return;m.status=st;m.hospital=st==='hospital'?h:'';state.logs.push({time:new Date().toLocaleTimeString().slice(0,5),msg:`${drv}: M${m.id} -> ${st==='hospital'?h:st}`});save();renderAll();fecharModal();}
+function switchView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('nav-'+id).classList.add('active');}
+init();
 </script>
+<!-- v1.1 -->
 </body>
 </html>
-
-
-
 
