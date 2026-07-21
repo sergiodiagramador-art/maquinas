@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Controle de Máquinas</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; padding-bottom: 80px; }
+
+.header {
+  background: #1a73e8;
+  color: white;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: sticky; top: 0; z-index: 50;
+}
+.header .h1 { font-size: 17px; font-weight: 700; }
+.header .subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white;
+  border-top: 1px solid #ddd;
+  display: flex;
+  z-index: 50;
+}
+.nav-btn {
+  flex: 1; padding: 10px 4px 8px;
+  text-align: center; font-size: 10px; font-weight: 600;
+  color: #888; cursor: pointer; transition: all 0.2s;
+  border: none; background: none;
+}
+.nav-btn .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+.nav-btn.active { color: #1a73e8; }
+
+.view { display: none; padding: 14px; }
+.view.active { display: block; }
+
+/* Cards */
+.card {
+  background: white; border-radius: 12px;
+  padding: 14px; margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.card-title { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 10px; }
+
+/* Driver select */
+.driver-select {
+  width: 100%; padding: 11px 12px;
+  border: 2px solid #ddd; border-radius: 10px;
+  font-size: 15px; background: white; color: #333;
+}
+.driver-select:focus { outline: none; border-color: #1a73e8; }
+
+/* Machines grid */
+.machines-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.machine-card {
+  background: white; border-radius: 10px; padding: 12px 6px;
+  text-align: center; cursor: pointer;
+  border: 2px solid #e0e0e0;
+  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.machine-card:active { transform: scale(0.95); }
+.machine-card.na-base { border-color: #34a853; background: #f0fff4; }
+.machine-card.fora { border-color: #ea4335; background: #fff5f5; }
+.machine-card.liberada { border-color: #f9ab00; background: #fffde7; animation: blink-border 1.2s infinite; }
+.machine-card.vencida { border-color: #ea4335; background: #ff1a1a; animation: blink-vencida 0.6s infinite; }
+@keyframes blink-border { 0%,100% { border-color: #f9ab00; background: #fffde7; } 50% { border-color: #ff6d00; background: #fff3cd; } }
+@keyframes blink-vencida { 0%,100% { background: #ff1a1a; border-color: #b71c1c; } 50% { background: #ff6b6b; border-color: #ea4335; } }
+.machine-card.vencida .num { color: white; }
+.machine-card.vencida .slabel { background: #b71c1c !important; color: white; }
+.machine-card.vencida .dname { color: rgba(255,255,255,0.85); }
+.machine-card .num { font-size: 20px; font-weight: 700; color: #333; }
+.machine-card .slabel {
+  font-size: 9px; font-weight: 700; margin-top: 4px;
+  padding: 2px 5px; border-radius: 20px; display: inline-block;
+}
+.na-base .slabel { background: #34a853; color: white; }
+.fora .slabel { background: #ea4335; color: white; }
+.liberada .slabel { background: #f9ab00; color: white; }
+.machine-card .dname { font-size: 9px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat-card { background: white; border-radius: 10px; padding: 12px 8px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.stat-card .val { font-size: 26px; font-weight: 700; }
+.stat-card .lbl { font-size: 10px; color: #888; margin-top: 2px; }
+.stat-card.total .val { color: #1a73e8; }
+.stat-card.base .val { color: #34a853; }
+.stat-card.fora-s .val { color: #ea4335; }
+
+/* Panel list */
+.panel-item {
+  background: white; border-radius: 10px; padding: 11px 13px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border-left: 4px solid #34a853; margin-bottom: 7px;
+}
+.panel-item.fora { border-left-color: #ea4335; }
+.panel-item.liberada { border-left-color: #f9ab00; }
+.panel-item.liberada .mstatus { color: #f9ab00; }
+.panel-item .mnum { font-size: 18px; font-weight: 700; color: #333; min-width: 32px; }
+.panel-item .minfo { flex: 1; }
+.panel-item .mstatus { font-size: 12px; font-weight: 600; }
+.panel-item.fora .mstatus { color: #ea4335; }
+.panel-item:not(.fora) .mstatus { color: #34a853; }
+.panel-item .mdetail { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* Hospitals */
+.hospital-item {
+  background: white; border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 7px;
+}
+.hospital-item .hicon { font-size: 22px; }
+.hospital-item .hinfo { flex: 1; }
+.hospital-item .hname { font-size: 14px; font-weight: 600; color: #222; }
+.hospital-item .hcoord { font-size: 10px; color: #888; margin-top: 2px; }
+.hospital-item .hdel { background: none; border: none; font-size: 18px; cursor: pointer; color: #ccc; padding: 4px; }
+.hospital-item .hdel:active { color: #ea4335; }
+
+/* History */
+.hist-item {
+  background: white; border-radius: 10px; padding: 11px 13px;
+  display: flex; align-items: flex-start; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 7px;
+}
+.hist-item .hbadge {
+  font-size: 10px; font-weight: 700; padding: 3px 7px;
+  border-radius: 20px; white-space: nowrap; margin-top: 2px;
+}
+.hist-item .hbadge.saida { background: #ea4335; color: white; }
+.hist-item .hbadge.retorno { background: #34a853; color: white; }
+.hist-item .hbadge.material { background: #f9ab00; color: white; }
+.hist-item .hbadge.fechamento { background: #1a73e8; color: white; }
+.hist-item .htext { flex: 1; font-size: 12px; color: #333; line-height: 1.5; }
+.hist-item .htime { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+/* Fechamento */
+.fechamento-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 14px;
+}
+.fech-card {
+  border-radius: 8px; padding: 10px 5px;
+  text-align: center; cursor: pointer;
+  border: 2px solid #e0e0e0; background: white;
+  transition: all 0.15s;
+}
+.fech-card:active { transform: scale(0.95); }
+.fech-card.na-base { border-color: #34a853; background: #f0fff4; }
+.fech-card.fora { border-color: #ea4335; background: #fff5f5; }
+.fech-card .fnum { font-size: 18px; font-weight: 700; color: #333; }
+.fech-card .fstatus { font-size: 9px; font-weight: 700; margin-top: 3px; }
+.fech-card.na-base .fstatus { color: #34a853; }
+.fech-card.fora .fstatus { color: #ea4335; }
+
+/* Buttons */
+.btn {
+  width: 100%; padding: 13px; border: none; border-radius: 11px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s; margin-bottom: 8px;
+}
+.btn:active { opacity: 0.75; }
+.btn-primary { background: #1a73e8; color: white; }
+.btn-green  { background: #34a853; color: white; }
+.btn-red    { background: #ea4335; color: white; }
+.btn-yellow { background: #f9ab00; color: white; }
+.btn-gray   { background: #f0f0f0; color: #555; }
+.modal input[type=text] {
+  width: 100%; padding: 11px 12px; border: 1.5px solid #ddd;
+  border-radius: 10px; font-size: 15px; margin-bottom: 10px; outline: none;
+}
+.modal input[type=text]:focus { border-color: #1a73e8; }
+.modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+.alerta-lib {
+  background: #fffde7; border: 1.5px solid #f9ab00; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+}
+.alerta-lib .anum { font-size: 20px; font-weight: 700; color: #333; min-width: 30px; }
+.alerta-lib .ainfo { flex: 1; }
+.alerta-lib .atitle { font-size: 13px; font-weight: 700; color: #e65100; }
+.alerta-lib .adet { font-size: 11px; color: #888; margin-top: 2px; }
+.btn-yellow { background: #f9ab00; color: white; }
+
+input[type=text], textarea {
+  width: 100%; padding: 11px 12px;
+  border: 2px solid #ddd; border-radius: 10px;
+  font-size: 14px; color: #333; margin-bottom: 8px;
+  font-family: inherit;
+}
+input[type=text]:focus, textarea:focus { outline: none; border-color: #1a73e8; }
+textarea { resize: vertical; min-height: 70px; }
+
+label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; display: block; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 100;
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 20px 20px 0 0;
+  padding: 22px; width: 100%; max-width: 480px;
+  animation: slideUp 0.22s ease; max-height: 90vh; overflow-y: auto;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal h2 { font-size: 19px; margin-bottom: 5px; color: #222; }
+.modal .modal-sub { font-size: 13px; color: #777; margin-bottom: 16px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%);
+  background: #333; color: white;
+  padding: 10px 18px; border-radius: 20px;
+  font-size: 13px; z-index: 200;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+.warn-box {
+  background: #fff3cd; border: 1px solid #ffc107;
+  border-radius: 10px; padding: 11px 13px;
+  font-size: 12px; color: #856404; margin-bottom: 12px;
+}
+
+.section-label {
+  font-size: 11px; font-weight: 700; color: #999;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin: 14px 0 8px;
+}
+
+.gps-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #34a853; margin-bottom: 10px;
+}
+.gps-dot { width: 8px; height: 8px; border-radius: 50%; background: #34a853; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.nearby-banner {
+  background: #e8f5e9; border: 2px solid #34a853;
+  border-radius: 12px; padding: 13px;
+  margin-bottom: 12px; display: none;
+}
+.nearby-banner .nb-title { font-size: 14px; font-weight: 700; color: #1b5e20; }
+.nearby-banner .nb-sub { font-size: 12px; color: #388e3c; margin-top: 3px; }
+
+.empty-state { text-align: center; padding: 30px 20px; color: #aaa; font-size: 13px; }
+.empty-state .ei { font-size: 36px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h1">🏥 Controle de Máquinas</div>
+  <div class="subtitle" id="headerSub">Selecione o motorista</div>
+</div>
+
+<!-- VIEWS -->
+<div id="view-home" class="view active">
+
+  <!-- Banner: salvar na tela inicial -->
+  <div id="installBanner" style="display:none;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:#1a73e8">📲 Salvar na tela inicial</div>
+      <div style="font-size:11px;color:#555;margin-top:2px" id="installInstr">Toque no botão abaixo para instalar o app.</div>
+    </div>
+    <button id="installBtn" onclick="doInstall()" style="background:#1a73e8;color:white;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Instalar</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:none;border:none;font-size:18px;color:#aaa;cursor:pointer;padding:4px">✕</button>
+  </div>
+
+  <div class="card">
+    <label>Quem é você?</label>
+    <select class="driver-select" id="driverSelect" onchange="onDriverChange()">
+      <option value="">— Selecione o motorista —</option>
+      <option value="Motorista 1">Motorista 1</option>
+      <option value="Motorista 2">Motorista 2</option>
+      <option value="Motorista 3">Motorista 3</option>
+    </select>
+  </div>
+
+  <div class="nearby-banner" id="nearbyBanner">
+    <div class="nb-title" id="nearbyTitle">📍 Você está próximo de um hospital!</div>
+    <div class="nb-sub" id="nearbySub">Toque para registrar movimentação</div>
+    <button class="btn btn-green" style="margin-top:10px;margin-bottom:0" onclick="openNearbyModal()">Registrar agora</button>
+  </div>
+
+  <div class="section-label">Máquinas</div>
+  <div class="machines-grid" id="machinesGrid"></div>
+
+  <div style="margin-top:14px">
+    <button class="btn btn-yellow" onclick="openMaterialModal()">📦 Registrar outro material</button>
+  </div>
+</div>
+
+<div id="view-painel" class="view">
+  <div class="stats">
+    <div class="stat-card total"><div class="val" id="statTotal">18</div><div class="lbl">Total</div></div>
+    <div class="stat-card base"><div class="val" id="statBase">18</div><div class="lbl">Na base</div></div>
+    <div class="stat-card fora-s"><div class="val" id="statFora">0</div><div class="lbl">Fora</div></div>
+  </div>
+  <div id="painelAlertas"></div>
+  <div class="section-label">Status das máquinas</div>
+  <div id="panelList"></div>
+</div>
+
+<div id="view-hospitais" class="view">
+  <div class="gps-indicator" id="gpsIndicator" style="display:none">
+    <div class="gps-dot"></div> GPS ativo
+  </div>
+  <button class="btn btn-primary" onclick="cadastrarHospital()">📍 Cadastrar hospital nesta localização</button>
+  <div class="section-label">Hospitais cadastrados</div>
+  <div id="hospitalList"></div>
+</div>
+
+<div id="view-historico" class="view">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div class="section-label" style="margin:0">Movimentações</div>
+    <button onclick="clearHistory()" style="background:none;border:none;font-size:12px;color:#ea4335;cursor:pointer">Limpar</button>
+  </div>
+  <div id="histList"></div>
+</div>
+
+<div id="view-fechamento" class="view">
+  <div class="card">
+    <div class="card-title">📋 Fechamento do expediente</div>
+    <p style="font-size:13px;color:#666;margin-bottom:14px">Confirme o status de cada máquina ao final do dia.</p>
+    <div class="fechamento-grid" id="fechGrid"></div>
+    <div style="margin-top:6px">
+      <label>Observações (opcional)</label>
+      <textarea id="fechObs" placeholder="Ex: Máquina 05 ficou no Hospital São Lucas para manutenção..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="confirmarFechamento()">✅ Confirmar fechamento do dia</button>
+  </div>
+
+  <!-- Backup -->
+  <div class="card" style="margin-top:0">
+    <div class="card-title">💾 Backup dos dados</div>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">Salve um arquivo com todos os dados para não perder nada se trocar de celular ou limpar o navegador.</p>
+    <button class="btn btn-primary" onclick="exportarBackup()">💾 Exportar backup</button>
+    <label style="margin-top:8px;display:block">
+      <div class="btn" style="background:#f0f0f0;color:#555;text-align:center;margin-bottom:0;cursor:pointer">📂 Importar backup</div>
+      <input type="file" accept=".html" id="importFile" style="display:none" onchange="importarBackup(event)">
+    </label>
+  </div>
+
+  <div id="fechHistList"></div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchView('home')"><span class="icon">🚗</span>Motorista</button>
+  <button class="nav-btn" onclick="switchView('painel')"><span class="icon">📊</span>Painel</button>
+  <button class="nav-btn" onclick="switchView('hospitais')"><span class="icon">📍</span>Hospitais</button>
+  <button class="nav-btn" onclick="switchView('historico')"><span class="icon">📋</span>Histórico</button>
+  <button class="nav-btn" onclick="switchView('fechamento')"><span class="icon">🔒</span>Fechar dia</button>
+</div>
+
+<!-- Modal: máquina -->
+<div class="modal-overlay" id="modalMaquina" onclick="closeModalBg(event,'modalMaquina')">
+  <div class="modal">
+    <h2 id="maqTitle">Máquina 01</h2>
+    <div class="modal-sub" id="maqStatus"></div>
+    <div id="maqHospitalSel" style="margin-bottom:10px;display:none">
+      <label>Hospital de destino</label>
+      <select class="driver-select" id="maqHospital" style="margin-bottom:0"></select>
+    </div>
+    <button class="btn btn-red" id="btnSaida" onclick="regMovimento('saida')">📤 Registrar SAÍDA</button>
+    <button class="btn btn-green" id="btnRetorno" onclick="regMovimento('retorno')">📥 Registrar RETORNO à base</button>
+    <button class="btn btn-yellow" id="btnLiberar" onclick="abrirModalLiberar()">🔔 Liberar para recolha</button>
+    <button class="btn btn-gray" id="btnCancelarLib" onclick="cancelarLiberacao()" style="display:none">❌ Cancelar liberação</button>
+    <button class="btn btn-gray" onclick="closeModal('modalMaquina')">Fechar</button>
+  </div>
+</div>
+
+<!-- Modal: liberação -->
+<div class="modal-overlay" id="modalLiberar" onclick="closeModalBg(event,'modalLiberar')">
+  <div class="modal">
+    <h2>🔔 Liberar para recolha</h2>
+    <div class="modal-sub" id="liberarSub">A máquina está pronta para ser recolhida.</div>
+    <label>Hospital onde está a máquina</label>
+    <select class="driver-select" id="liberarHospital" style="margin-bottom:10px"></select>
+    <label>Horário de liberação</label>
+    <input type="text" id="liberarHora" placeholder="Ex: 14:30">
+    <label>⏰ Recolher até (prazo)</label>
+    <input type="text" id="liberarPrazo" placeholder="Ex: 15:30 — pisca vermelho se vencer">
+    <label>Observação (opcional)</label>
+    <input type="text" id="liberarObs" placeholder="Ex: Aguardando na recepção">
+    <button class="btn btn-yellow" onclick="confirmarLiberacao()">🔔 Confirmar liberação</button>
+    <button class="btn btn-gray" onclick="closeModal('modalLiberar')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: material -->
+<div class="modal-overlay" id="modalMaterial" onclick="closeModalBg(event,'modalMaterial')">
+  <div class="modal">
+    <h2>📦 Outro material</h2>
+    <div class="modal-sub">Registre outros itens levados ou trazidos</div>
+    <label>Tipo de movimentação</label>
+    <select class="driver-select" id="matTipo" style="margin-bottom:10px">
+      <option value="saida">📤 Saída da base</option>
+      <option value="retorno">📥 Retorno à base</option>
+    </select>
+    <label>Descrição do material</label>
+    <input type="text" id="matDesc" placeholder="Ex: 2 cilindros de oxigênio, caixa de insumos...">
+    <div id="matHospSel">
+      <label>Hospital (opcional)</label>
+      <select class="driver-select" id="matHospital" style="margin-bottom:10px"></select>
+    </div>
+    <button class="btn btn-yellow" onclick="regMaterial()">Registrar material</button>
+    <button class="btn btn-gray" onclick="closeModal('modalMaterial')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: cadastrar hospital -->
+<div class="modal-overlay" id="modalHospital" onclick="closeModalBg(event,'modalHospital')">
+  <div class="modal">
+    <h2>📍 Novo hospital</h2>
+    <div class="modal-sub" id="hospCoordSub"></div>
+    <label>Nome do hospital</label>
+    <input type="text" id="hospNome" placeholder="Ex: Hospital São Lucas">
+    <label>Raio de detecção (metros)</label>
+    <input type="text" id="hospRaio" value="200">
+    <button class="btn btn-primary" onclick="salvarHospital()">Salvar hospital</button>
+    <button class="btn btn-gray" onclick="closeModal('modalHospital')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: chegou ao hospital -->
+<div class="modal-overlay" id="modalChegou">
+  <div class="modal">
+    <h2 id="chegouTitle">🏥 Você chegou!</h2>
+    <div class="modal-sub" id="chegouSub"></div>
+    <button class="btn btn-red" onclick="chegouAction('saida')">📤 Deixei máquinas</button>
+    <button class="btn btn-green" onclick="chegouAction('retorno')">📥 Recolhi máquinas</button>
+    <button class="btn btn-yellow" onclick="chegouAction('material')">📦 Levei/trouxe material</button>
+    <button class="btn btn-gray" onclick="chegouAction('nada')">Nenhuma movimentação</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+var TOTAL = 18;
+var PRESET_HOSPITALS = [
+  { id: 'p1',  nome: 'Hospital Erasto Gaertner',        lat: -25.4533705,  lng: -49.238806,   raio: 150 },
+  { id: 'p2',  nome: 'Hospital Erastinho',               lat: -25.4528189,  lng: -49.238619,   raio: 150 },
+  { id: 'p3',  nome: 'Hospital Pilar',                   lat: -25.4155502,  lng: -49.2789642,  raio: 150 },
+  { id: 'p4',  nome: 'Centro Hospitalar Nossa Saúde',    lat: -25.4202592,  lng: -49.2921622,  raio: 150 },
+  { id: 'p5',  nome: 'Hospital Nossa Senhora das Graças',lat: -25.4210967,  lng: -49.290718,   raio: 150 },
+  { id: 'p6',  nome: 'Hospital São Marcelino Champagnat',lat: -25.4360463,  lng: -49.2463727,  raio: 150 },
+  { id: 'p7',  nome: 'Hospital Ônix Batel',              lat: -25.4418182,  lng: -49.2980751,  raio: 150 },
+  { id: 'p8',  nome: 'Hospital Ônix Mateus Leme',        lat: -25.3972,     lng: -49.3110,     raio: 150 },
+  { id: 'p9',  nome: 'Maternidade do Trabalhador',       lat: -25.4350,     lng: -49.2620,     raio: 150 },
+  { id: 'p10', nome: 'Maternidade Marillac',             lat: -25.4180,     lng: -49.2700,     raio: 150 },
+  { id: 'p11', nome: 'INC - Campo Comprido',             lat: -25.4431431,  lng: -49.3384167,  raio: 150 },
+  { id: 'p12', nome: 'Hospital Fraturas - Alto da XV',   lat: -25.4265732,  lng: -49.252862,   raio: 150 },
+  { id: 'p13', nome: 'Hospital Oswaldo Cruz',            lat: -25.4252294,  lng: -49.2587881,  raio: 150 }
+];
+
+var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
+if (!state) {
+  state = {
+    machines: [],
+    hospitals: [],
+    history: [],
+    fechamentos: []
+  };
+  for (var i = 1; i <= TOTAL; i++) {
+    state.machines.push({ id: i, status: 'base', driver: null, hospital: null, since: null, liberada: false, liberadaTs: null, liberadaHosp: null });
+  }
+  // Pré-carrega os hospitais cadastrados
+  state.hospitals = PRESET_HOSPITALS.map(function(h) { return Object.assign({}, h); });
+  save();
+} else {
+  // Adiciona hospitais pré-definidos que ainda não existem no estado salvo
+  PRESET_HOSPITALS.forEach(function(ph) {
+    var existe = state.hospitals.find(function(h) { return h.id === ph.id; });
+    if (!existe) state.hospitals.push(Object.assign({}, ph));
+  });
+  save();
+}
+
+function save() { localStorage.setItem('hm_state', JSON.stringify(state)); }
+
+// ── GPS ──
+var gpsPos = null;
+var gpsWatch = null;
+var nearbyHospital = null;
+var nearbyTimer = null;
+var nearbyAlerted = null;
+
+function startGPS() {
+  if (!navigator.geolocation) return;
+  document.getElementById('gpsIndicator').style.display = 'flex';
+  gpsWatch = navigator.geolocation.watchPosition(function(pos) {
+    gpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    checkNearby();
+  }, null, { enableHighAccuracy: true, maximumAge: 15000 });
+}
+
+function dist(lat1, lng1, lat2, lng2) {
+  var R = 6371000;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkNearby() {
+  if (!gpsPos || !getDriver()) return;
+  var found = null;
+  state.hospitals.forEach(function(h) {
+    var d = dist(gpsPos.lat, gpsPos.lng, h.lat, h.lng);
+    if (d <= (h.raio || 200)) found = h;
+  });
+
+  if (found) {
+    var banner = document.getElementById('nearbyBanner');
+    document.getElementById('nearbyTitle').textContent = '📍 Próximo: ' + found.nome;
+    document.getElementById('nearbySub').textContent = 'Permanecendo no local, você será perguntado em 3 minutos.';
+    banner.style.display = 'block';
+
+    if (nearbyHospital !== found.id) {
+      nearbyHospital = found.id;
+      nearbyAlerted = found.id;
+      clearTimeout(nearbyTimer);
+      nearbyTimer = setTimeout(function() {
+        if (nearbyHospital === found.id) showChegouModal(found);
+      }, 3 * 60 * 1000); // 3 minutos
+    }
+  } else {
+    document.getElementById('nearbyBanner').style.display = 'none';
+    nearbyHospital = null;
+    clearTimeout(nearbyTimer);
+  }
+}
+
+function openNearbyModal() {
+  var h = state.hospitals.find(function(x) { return x.id === nearbyHospital; });
+  if (h) showChegouModal(h);
+}
+
+function showChegouModal(h) {
+  document.getElementById('chegouTitle').textContent = '🏥 ' + h.nome;
+  document.getElementById('chegouSub').textContent = 'Você está neste hospital. O que aconteceu?';
+  document.getElementById('chegouTitle').dataset.hid = h.id;
+  document.getElementById('modalChegou').classList.add('open');
+
+  // Notificação nativa para aparecer em primeiro plano
+  if ('Notification' in window && Notification.permission === 'granted') {
+    var n = new Notification('🏥 ' + h.nome, {
+      body: 'Você está há 3 minutos no local. Abra o app para registrar.',
+      icon: '',
+      requireInteraction: true,
+      tag: 'hospital-chegou'
+    });
+    n.onclick = function() { window.focus(); n.close(); };
+  } else if ('Notification' in window && Notification.permission !== 'denied') {
+    Notification.requestPermission().then(function(perm) {
+      if (perm === 'granted') showChegouModal(h);
+    });
+  }
+
+  // Vibrar se disponível
+  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+}
+
+function chegouAction(tipo) {
+  var driver = getDriver();
+  var hid = document.getElementById('chegouTitle').dataset.hid;
+  var h = state.hospitals.find(function(x) { return x.id == hid; });
+  closeModal('modalChegou');
+
+  if (tipo === 'nada') return;
+
+  if (tipo === 'material') {
+    openMaterialModal();
+    return;
+  }
+
+  // Abre modal de máquina mas no contexto do hospital
+  // Para simplificar, vai para a aba motorista
+  switchView('home');
+  showToast('Selecione a máquina que ' + (tipo === 'saida' ? 'saiu' : 'retornou'));
+}
+
+// ── HELPERS ──
+function getDriver() { return document.getElementById('driverSelect').value; }
+
+function onDriverChange() {
+  var d = getDriver();
+  document.getElementById('headerSub').textContent = d || 'Selecione o motorista';
+  renderGrid();
+  if (d) {
+    startGPS();
+    // Pede permissão de notificação para aparecer em primeiro plano
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+}
+
+function fmt(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function fmtFull(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+// ── MACHINES ──
+function renderGrid() {
+  var grid = document.getElementById('machinesGrid');
+  grid.innerHTML = '';
+  state.machines.forEach(function(m) {
+    var card = document.createElement('div');
+    var vencida = isMaqVencida(m);
+    var cls = vencida ? 'vencida' : (m.liberada ? 'liberada' : (m.status === 'base' ? 'na-base' : 'fora'));
+    card.className = 'machine-card ' + cls;
+    var lbl = vencida ? '🚨ATRASADA' : (m.liberada ? '⚡RECOLHA' : (m.status === 'base' ? 'BASE' : 'FORA'));
+    var sub = vencida ? ('prazo: ' + m.liberadaPrazo) : (m.liberada ? (m.liberadaTs || '') : (m.driver || ''));
+    card.innerHTML =
+      '<div class="num">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="slabel">' + lbl + '</div>' +
+      '<div class="dname">' + sub + '</div>';
+    card.onclick = function() { openMaqModal(m.id); };
+    grid.appendChild(card);
+  });
+}
+
+var selectedMaq = null;
+
+function openMaqModal(id) {
+  selectedMaq = id;
+  var m = state.machines[id - 1];
+  document.getElementById('maqTitle').textContent = 'Máquina ' + String(id).padStart(2,'0');
+
+  var hospSel = document.getElementById('maqHospitalSel');
+  var hospSelect = document.getElementById('maqHospital');
+  hospSelect.innerHTML = '<option value="">— Sem hospital específico —</option>';
+  state.hospitals.forEach(function(h) {
+    hospSelect.innerHTML += '<option value="' + h.id + '">' + h.nome + '</option>';
+  });
+
+  if (m.liberada) {
+    var hNome = '';
+    if (m.liberadaHosp) {
+      var hh = state.hospitals.find(function(x) { return x.id == m.liberadaHosp; });
+      if (hh) hNome = ' · ' + hh.nome;
+    }
+    document.getElementById('maqStatus').textContent = '⚡ Aguardando recolha — liberada às ' + (m.liberadaTs || '?') + hNome;
+    document.getElementById('btnSaida').style.display = 'none';
+    document.getElementById('btnRetorno').style.display = 'block';
+    document.getElementById('btnLiberar').style.display = 'none';
+    document.getElementById('btnCancelarLib').style.display = 'block';
+    hospSel.style.display = 'none';
+  } else if (m.status === 'base') {
+    document.getElementById('maqStatus').textContent = '✅ Na base — disponível';
+    document.getElementById('btnSaida').style.display = 'block';
+    document.getElementById('btnRetorno').style.display = 'none';
+    document.getElementById('btnLiberar').style.display = 'none';
+    document.getElementById('btnCancelarLib').style.display = 'none';
+    hospSel.style.display = 'block';
+  } else {
+    var hospNome = '';
+    if (m.hospital) {
+      var h = state.hospitals.find(function(x) { return x.id == m.hospital; });
+      if (h) hospNome = ' · ' + h.nome;
+    }
+    document.getElementById('maqStatus').textContent = '🔴 Fora — ' + (m.driver || '') + hospNome + ' · desde ' + fmt(m.since);
+    document.getElementById('btnSaida').style.display = 'none';
+    document.getElementById('btnRetorno').style.display = 'block';
+    document.getElementById('btnLiberar').style.display = 'block';
+    document.getElementById('btnCancelarLib').style.display = 'none';
+    hospSel.style.display = 'none';
+  }
+
+  document.getElementById('modalMaquina').classList.add('open');
+}
+
+function regMovimento(tipo) {
+  var driver = getDriver();
+  var m = state.machines[selectedMaq - 1];
+  var hospId = document.getElementById('maqHospital').value;
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) hospNome = h.nome;
+  }
+
+  if (tipo === 'saida') {
+    m.status = 'fora';
+    m.driver = driver;
+    m.hospital = hospId || null;
+    m.since = new Date().toISOString();
+    addHistory('saida', 'Máquina ' + String(m.id).padStart(2,'0') + ' saiu' + (hospNome ? ' → ' + hospNome : ''), driver);
+    showToast('Máquina ' + String(m.id).padStart(2,'0') + ' registrada como SAÍDA');
+  } else {
+    m.status = 'base';
+    var prev = m.driver;
+    m.driver = null; m.hospital = null; m.since = null;
+    m.liberada = false; m.liberadaTs = null; m.liberadaHosp = null; m.liberadaPrazo = null;
+    addHistory('retorno', 'Máquina ' + String(m.id).padStart(2,'0') + ' retornou à base', prev || driver);
+    showToast('Máquina ' + String(m.id).padStart(2,'0') + ' retornou à base');
+  }
+
+  save();
+  closeModal('modalMaquina');
+  renderGrid();
+  renderPanel();
+  renderFechGrid();
+}
+
+// ── MATERIAL ──
+function openMaterialModal() {
+  if (!getDriver()) { showToast('Selecione seu nome primeiro!'); return; }
+  var sel = document.getElementById('matHospital');
+  sel.innerHTML = '<option value="">— Sem hospital específico —</option>';
+  state.hospitals.forEach(function(h) {
+    sel.innerHTML += '<option value="' + h.id + '">' + h.nome + '</option>';
+  });
+  document.getElementById('matDesc').value = '';
+  document.getElementById('modalMaterial').classList.add('open');
+}
+
+function regMaterial() {
+  var driver = getDriver();
+  var tipo = document.getElementById('matTipo').value;
+  var desc = document.getElementById('matDesc').value.trim();
+  if (!desc) { showToast('Descreva o material!'); return; }
+  var hospId = document.getElementById('matHospital').value;
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) hospNome = ' · ' + h.nome;
+  }
+  var label = (tipo === 'saida' ? 'Saída' : 'Retorno') + ': ' + desc + hospNome;
+  addHistory('material', label, driver);
+  showToast('Material registrado!');
+  closeModal('modalMaterial');
+  renderHistorico();
+}
+
+// ── HOSPITAIS ──
+var tempCoords = null;
+
+function cadastrarHospital() {
+  if (!navigator.geolocation) { showToast('GPS não disponível neste dispositivo'); return; }
+  showToast('Obtendo localização...');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    tempCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    document.getElementById('hospCoordSub').textContent =
+      'Lat: ' + tempCoords.lat.toFixed(5) + ', Lng: ' + tempCoords.lng.toFixed(5);
+    document.getElementById('hospNome').value = '';
+    document.getElementById('hospRaio').value = '200';
+    document.getElementById('modalHospital').classList.add('open');
+  }, function() {
+    showToast('Não foi possível obter o GPS. Ative a localização.');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function salvarHospital() {
+  var nome = document.getElementById('hospNome').value.trim();
+  var raio = parseInt(document.getElementById('hospRaio').value) || 200;
+  if (!nome) { showToast('Digite o nome do hospital!'); return; }
+  if (!tempCoords) { showToast('Sem coordenadas GPS!'); return; }
+
+  state.hospitals.push({
+    id: Date.now(),
+    nome: nome,
+    lat: tempCoords.lat,
+    lng: tempCoords.lng,
+    raio: raio
+  });
+  save();
+  closeModal('modalHospital');
+  renderHospitals();
+  renderHospitalSelects();
+  showToast('Hospital "' + nome + '" cadastrado!');
+}
+
+function deletarHospital(id) {
+  state.hospitals = state.hospitals.filter(function(h) { return h.id !== id; });
+  save();
+  renderHospitals();
+}
+
+function renderHospitals() {
+  var list = document.getElementById('hospitalList');
+  if (!state.hospitals.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">🏥</div>Nenhum hospital cadastrado.<br>Vá até o hospital e toque em "Cadastrar hospital nesta localização".</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.hospitals.forEach(function(h) {
+    var item = document.createElement('div');
+    item.className = 'hospital-item';
+    item.innerHTML =
+      '<div class="hicon">🏥</div>' +
+      '<div class="hinfo">' +
+        '<div class="hname">' + h.nome + '</div>' +
+        '<div class="hcoord">Raio: ' + (h.raio||200) + 'm · ' + h.lat.toFixed(4) + ', ' + h.lng.toFixed(4) + '</div>' +
+      '</div>' +
+      '<button class="hdel" onclick="deletarHospital(' + h.id + ')">🗑️</button>';
+    list.appendChild(item);
+  });
+}
+
+function renderHospitalSelects() {
+  // updated when modal opens
+}
+
+// ── HISTORY ──
+function addHistory(tipo, texto, motorista) {
+  state.history.unshift({
+    tipo: tipo,
+    texto: texto,
+    motorista: motorista,
+    ts: new Date().toISOString()
+  });
+  if (state.history.length > 200) state.history = state.history.slice(0, 200);
+  save();
+  renderHistorico();
+}
+
+function renderHistorico() {
+  var list = document.getElementById('histList');
+  if (!state.history.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">📋</div>Nenhuma movimentação registrada ainda.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.history.forEach(function(h) {
+    var labels = { saida:'SAÍDA', retorno:'RETORNO', material:'MATERIAL', fechamento:'FECHAMENTO' };
+    var item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML =
+      '<div><div class="hbadge ' + h.tipo + '">' + (labels[h.tipo]||h.tipo) + '</div></div>' +
+      '<div class="htext">' + h.texto +
+        '<div class="htime">' + fmtFull(h.ts) + ' · ' + (h.motorista||'') + '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+function clearHistory() {
+  if (!confirm('Limpar todo o histórico?')) return;
+  state.history = [];
+  save();
+  renderHistorico();
+}
+
+// ── PANEL ──
+function renderPanel() {
+  var base = state.machines.filter(function(m) { return m.status === 'base' && !m.liberada; }).length;
+  var fora = state.machines.filter(function(m) { return m.status === 'fora'; }).length;
+  var lib  = state.machines.filter(function(m) { return m.liberada; }).length;
+  document.getElementById('statBase').textContent = base;
+  document.getElementById('statFora').textContent = fora;
+
+  // Painel de alertas
+  var alertas = document.getElementById('painelAlertas');
+  alertas.innerHTML = '';
+  if (lib > 0) {
+    var alTitle = document.createElement('div');
+    alTitle.className = 'section-label';
+    alTitle.style.color = '#e65100';
+    alTitle.textContent = '⚡ Aguardando recolha (' + lib + ')';
+    alertas.appendChild(alTitle);
+    state.machines.filter(function(m) { return m.liberada; }).forEach(function(m) {
+      var hNome = '';
+      if (m.liberadaHosp) {
+        var hh = state.hospitals.find(function(x) { return x.id == m.liberadaHosp; });
+        if (hh) hNome = hh.nome;
+      }
+      var el = document.createElement('div');
+      el.className = 'alerta-lib';
+      el.innerHTML =
+        '<div class="anum">' + String(m.id).padStart(2,'0') + '</div>' +
+        '<div class="ainfo">' +
+          '<div class="atitle">Liberar às ' + (m.liberadaTs || '?') + '</div>' +
+          '<div class="adet">' + (hNome || 'Hospital não informado') + '</div>' +
+        '</div>';
+      alertas.appendChild(el);
+    });
+  }
+
+  var list = document.getElementById('panelList');
+  list.innerHTML = '';
+  var sorted = state.machines.slice().sort(function(a,b) {
+    var pri = function(x) { return x.liberada ? 0 : x.status === 'fora' ? 1 : 2; };
+    if (pri(a) !== pri(b)) return pri(a) - pri(b);
+    return a.id - b.id;
+  });
+  sorted.forEach(function(m) {
+    var hospNome = '';
+    if (m.hospital) {
+      var h = state.hospitals.find(function(x) { return x.id == m.hospital; });
+      if (h) hospNome = ' · ' + h.nome;
+    }
+    var item = document.createElement('div');
+    var cls = m.liberada ? ' liberada' : (m.status === 'fora' ? ' fora' : '');
+    item.className = 'panel-item' + cls;
+    var statusTxt = m.liberada ? '⚡ Aguardando recolha' : (m.status === 'base' ? '✅ Na base' : '🔴 Fora da base');
+    var detTxt = m.liberada
+      ? 'Liberada às ' + (m.liberadaTs || '?') + (hospNome ? hospNome : '')
+      : (m.status === 'fora' ? (m.driver||'') + hospNome + ' · desde ' + fmt(m.since) : 'Disponível');
+    item.innerHTML =
+      '<div class="mnum">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="minfo">' +
+        '<div class="mstatus">' + statusTxt + '</div>' +
+        '<div class="mdetail">' + detTxt + '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+// ── FECHAMENTO ──
+var fechStatus = {};
+
+function renderFechGrid() {
+  var grid = document.getElementById('fechGrid');
+  grid.innerHTML = '';
+  state.machines.forEach(function(m) {
+    var st = fechStatus[m.id] !== undefined ? fechStatus[m.id] : m.status;
+    var card = document.createElement('div');
+    card.className = 'fech-card ' + (st === 'base' ? 'na-base' : 'fora');
+    card.innerHTML =
+      '<div class="fnum">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="fstatus">' + (st === 'base' ? 'BASE' : 'FORA') + '</div>';
+    card.onclick = function() {
+      fechStatus[m.id] = (st === 'base' ? 'fora' : 'base');
+      renderFechGrid();
+    };
+    grid.appendChild(card);
+  });
+}
+
+function confirmarFechamento() {
+  if (!getDriver()) { showToast('Selecione o motorista!'); return; }
+  var driver = getDriver();
+
+  // Apply fechStatus overrides
+  state.machines.forEach(function(m) {
+    if (fechStatus[m.id] !== undefined) {
+      m.status = fechStatus[m.id];
+      if (m.status === 'base') { m.driver = null; m.hospital = null; m.since = null; }
+    }
+  });
+  fechStatus = {};
+
+  var base = state.machines.filter(function(m) { return m.status === 'base'; }).length;
+  var fora = TOTAL - base;
+  var obs = document.getElementById('fechObs').value.trim();
+  var resumo = 'Fechamento: ' + base + ' na base, ' + fora + ' em campo' + (obs ? ' · ' + obs : '');
+
+  addHistory('fechamento', resumo, driver);
+  save();
+  renderGrid();
+  renderPanel();
+  renderFechGrid();
+  document.getElementById('fechObs').value = '';
+  showToast('Expediente encerrado!');
+  switchView('historico');
+}
+
+// ── NAV ──
+var views = ['home','painel','hospitais','historico','fechamento'];
+
+function switchView(name) {
+  views.forEach(function(v) {
+    document.getElementById('view-'+v).classList.toggle('active', v === name);
+  });
+  document.querySelectorAll('.nav-btn').forEach(function(btn, i) {
+    btn.classList.toggle('active', views[i] === name);
+  });
+  if (name === 'painel') renderPanel();
+  if (name === 'hospitais') renderHospitals();
+  if (name === 'historico') renderHistorico();
+  if (name === 'fechamento') renderFechGrid();
+}
+
+// ── MODAL ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalBg(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+// ── TOAST ──
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── PRAZO VENCIDO ──
+function parseHHMM(str) {
+  if (!str) return null;
+  var m = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  var now = new Date();
+  var d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(m[1]), parseInt(m[2]), 0);
+  return d;
+}
+
+function isMaqVencida(m) {
+  if (!m.liberada || !m.liberadaPrazo) return false;
+  var prazo = parseHHMM(m.liberadaPrazo);
+  if (!prazo) return false;
+  return new Date() > prazo;
+}
+
+function checkPrazos() {
+  var tinha = false;
+  state.machines.forEach(function(m) {
+    if (isMaqVencida(m)) { tinha = true; }
+  });
+  if (tinha) {
+    renderGrid();
+    renderPanel();
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+  }
+}
+setInterval(checkPrazos, 30000); // verifica a cada 30 seg
+
+// ── INSTALAR NA TELA INICIAL ──
+var deferredInstall = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').style.display = 'flex';
+  document.getElementById('installInstr').textContent = 'Instale o app para acesso rápido na tela inicial.';
+});
+
+// iOS: Safari não dispara beforeinstallprompt — mostra instrução manual
+window.addEventListener('load', function() {
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone === true;
+  if (isIOS && isSafari && !isStandalone) {
+    document.getElementById('installBanner').style.display = 'flex';
+    document.getElementById('installInstr').textContent = 'No Safari: toque em Compartilhar (⎋) → "Adicionar à Tela de Início".';
+    document.getElementById('installBtn').style.display = 'none';
+  }
+});
+
+function doInstall() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function() {
+      document.getElementById('installBanner').style.display = 'none';
+      deferredInstall = null;
+    });
+  }
+}
+
+// ── LIBERAÇÃO ──
+var maqLiberar = null;
+
+function abrirModalLiberar() {
+  maqLiberar = selectedMaq;
+  var m = state.machines[maqLiberar - 1];
+  document.getElementById('liberarSub').textContent = 'Máquina ' + String(m.id).padStart(2,'0') + ' — informe quando foi liberada pelo hospital.';
+  // Preenche select de hospitais
+  var sel = document.getElementById('liberarHospital');
+  sel.innerHTML = '<option value="">— Selecione o hospital —</option>';
+  state.hospitals.forEach(function(h) {
+    var opt = document.createElement('option');
+    opt.value = h.id;
+    opt.textContent = h.nome;
+    if (m.hospital && m.hospital == h.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Hora atual como sugestão
+  var now = new Date();
+  document.getElementById('liberarHora').value = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('liberarPrazo').value = '';
+  document.getElementById('liberarObs').value = '';
+  closeModal('modalMaquina');
+  document.getElementById('modalLiberar').classList.add('open');
+}
+
+function confirmarLiberacao() {
+  var m = state.machines[maqLiberar - 1];
+  var hospId = document.getElementById('liberarHospital').value;
+  var hora = document.getElementById('liberarHora').value.trim() || 'sem horário';
+  var prazo = document.getElementById('liberarPrazo').value.trim();
+  var obs = document.getElementById('liberarObs').value.trim();
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) { hospNome = h.nome; m.liberadaHosp = hospId; }
+  }
+  m.liberada = true;
+  m.liberadaTs = hora;
+  m.liberadaPrazo = prazo || null;
+  var texto = 'Máquina ' + String(m.id).padStart(2,'0') + ' liberada para recolha' +
+    (hospNome ? ' em ' + hospNome : '') + ' às ' + hora +
+    (prazo ? ' · prazo: ' + prazo : '') +
+    (obs ? ' · ' + obs : '');
+  addHistory('liberacao', texto, getDriver() || 'Técnico');
+  save();
+  closeModal('modalLiberar');
+  renderGrid();
+  renderPanel();
+  showToast('Máquina ' + String(m.id).padStart(2,'0') + ' marcada para recolha!');
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+
+function cancelarLiberacao() {
+  var m = state.machines[selectedMaq - 1];
+  m.liberada = false;
+  m.liberadaTs = null;
+  m.liberadaHosp = null;
+  addHistory('liberacao', 'Liberação cancelada — Máquina ' + String(m.id).padStart(2,'0'), getDriver() || 'Técnico');
+  save();
+  closeModal('modalMaquina');
+  renderGrid();
+  renderPanel();
+  showToast('Liberação cancelada.');
+}
+
+// ── BACKUP ──
+function exportarBackup() {
+  var dados = JSON.stringify(state);
+  var html = document.documentElement.outerHTML;
+  // Injeta os dados como script inline antes do </body>
+  var backup = html.replace(
+    /\/\/ ── INIT ──/,
+    '// ── RESTORE BACKUP ──\ntry { var _bk = ' + dados.replace(/\\/g,'\\\\').replace(/`/g,'\\`') + '; localStorage.setItem("maqState", JSON.stringify(_bk)); } catch(e){}\n// ── INIT ──'
+  );
+  var blob = new Blob([backup], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var now = new Date();
+  var stamp = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') +
+              '_' + String(now.getHours()).padStart(2,'0') + 'h' + String(now.getMinutes()).padStart(2,'0');
+  a.href = url;
+  a.download = 'maquinas_backup_' + stamp + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup salvo!');
+}
+
+function importarBackup(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var txt = e.target.result;
+    var match = txt.match(/var _bk = ({.*?});/s);
+    if (!match) { showToast('Arquivo inválido!'); return; }
+    try {
+      var dados = JSON.parse(match[1]);
+      localStorage.setItem('maqState', JSON.stringify(dados));
+      showToast('Backup restaurado! Recarregando...');
+      setTimeout(function() { location.reload(); }, 1500);
+    } catch(err) {
+      showToast('Erro ao importar backup.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── INIT ──
+renderGrid();
+renderPanel();
+renderHistorico();
+renderFechGrid();
+</script>
+</body>
+</html>
