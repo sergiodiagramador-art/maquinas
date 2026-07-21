@@ -1,4 +1,4 @@
-const CACHE = 'maquinas-v1';
+const CACHE = 'maquinas-v5';
 const FILES = ['/', '/maquinas/', '/maquinas/index.html', '/maquinas/manifest.json', '/maquinas/icon.png'];
 
 self.addEventListener('install', e => {
