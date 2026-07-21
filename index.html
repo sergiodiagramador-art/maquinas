@@ -486,6 +486,7 @@ if (!state) {
   PRESET_HOSPITALS.forEach(function(ph) {
     var existe = state.hospitals.find(function(h) { return h.id === ph.id; });
     if (!existe) state.hospitals.push(Object.assign({}, ph));
+    else { existe.nome = ph.nome; existe.lat = ph.lat; existe.lng = ph.lng; existe.raio = ph.raio; }
   });
   save();
 }
