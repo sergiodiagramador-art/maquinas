@@ -2,50 +2,81 @@
 <html lang='pt-br'>
 <head>
     <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Logística v2.5 - DIAGNÓSTICO</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <title>Logística v2.6 - ATIVA</title>
     <style>
-        body { font-family: sans-serif; background: #0056b3; color: white; text-align: center; margin: 0; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .card { background: #28a745; padding: 20px 5px; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        body { font-family: sans-serif; background: #0056b3; margin: 0; padding-bottom: 70px; color: white; text-align: center; }
+        header { background: #004494; padding: 15px; font-weight: bold; font-size: 18px; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        .card { background: #28a745; padding: 20px 5px; border-radius: 10px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2); }
         .card.rua { background: #fd7e14; }
         .card.hosp { background: white; color: #0056b3; }
         .card.manut { background: #dc3545; }
-        .status-info { margin-bottom: 20px; background: white; color: #333; padding: 10px; border-radius: 8px; font-weight: bold; }
+        .card small { display: block; font-size: 10px; margin-top: 5px; font-weight: normal; }
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; height: 60px; box-shadow: 0 -4px 10px rgba(0,0,0,0.2); }
+        .nav-btn { flex: 1; border: none; background: none; font-weight: bold; color: #666; font-size: 14px; }
+        .nav-btn.active { color: #0056b3; border-top: 4px solid #0056b3; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .hosp-item { background: white; margin: 10px; padding: 15px; border-radius: 8px; border-left: 10px solid #004494; display: flex; justify-content: space-between; color: #333; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class='status-info'>v2.5: TOQUE NAS MÁQUINAS PARA MUDAR</div>
-    <div id='grid' class='grid'></div>
+    <header>LOGÍSTICA v2.6</header>
+    
+    <div id='view-m' class='view active'>
+        <div style='background:white; color:#333; padding:10px; font-size:12px;'>Toque na máquina para mudar o status</div>
+        <div id='grid' class='grid'></div>
+    </div>
+
+    <div id='view-h' class='view'>
+        <div id='lista-h'></div>
+    </div>
+
+    <div class='nav'>
+        <button id='b-m' class='nav-btn active' onclick='sw("m")'>📦 MÁQUINAS</button>
+        <button id='b-h' class='nav-btn' onclick='sw("h")'>🏥 HOSPITAIS</button>
+    </div>
 
     <script>
-        // 1. Limpeza de Service Workers (Causa comum de travamento)
-        if('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                for(let reg of regs) reg.unregister();
-            });
-        }
-
-        // 2. Estado simples (Sem carregar do celular)
-        let machines = Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base'}));
-        const states = ['base', 'rua', 'hosp', 'manut'];
+        const HOSP = ['Nossa Saúde','Nações','Erasto','Erastinho','Pilar','Marcelino','Trabalhador','INC','Santa Cruz','Sugisawa','Clínicas','Evangélico','São Vicente','IPO','Vita'];
+        const STATES = ['base', 'rua', 'hosp', 'manut'];
+        let m_data = Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''}));
 
         function render() {
-            const container = document.getElementById('grid');
-            container.innerHTML = machines.map(m => 
-                '<div class="card '+m.s+'" onclick="proximo('+m.id+')">'+m.id+'<br><small>'+m.s.toUpperCase()+'</small></div>'
+            document.getElementById('grid').innerHTML = m_data.map(m => 
+                '<div class="card '+m.s+'" onclick="nxt('+m.id+')">'+m.id+'<br><small>'+(m.h||m.s.toUpperCase())+'</small></div>'
             ).join('');
+            document.getElementById('lista-h').innerHTML = HOSP.sort().map(h => 
+                '<div class="hosp-item">'+h+'</div>'
+            ).join('');
+            localStorage.setItem('hm_v26', JSON.stringify(m_data));
         }
 
-        function proximo(id) {
-            const m = machines.find(x => x.id === id);
-            let idx = states.indexOf(m.s);
-            m.s = states[(idx + 1) % states.length];
+        function nxt(id) {
+            const m = m_data.find(x => x.id === id);
+            let idx = STATES.indexOf(m.s);
+            let n_s = STATES[(idx + 1) % STATES.length];
+            m.s = n_s;
+            if(n_s === 'hosp') {
+                let h_n = prompt('Hospital? (Ex: Erasto)');
+                m.h = h_n || '';
+            } else {
+                m.h = '';
+            }
             render();
         }
 
+        function sw(v) {
+            document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+            document.getElementById('view-'+v).classList.add('active');
+            document.getElementById('b-'+v).classList.add('active');
+        }
+
+        const saved = localStorage.getItem('hm_v26');
+        if(saved) m_data = JSON.parse(saved);
         render();
-        console.log('v2.5 Rodando');
     </script>
 </body>
 </html>
