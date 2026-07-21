@@ -1258,7 +1258,7 @@ function isMaqVencida(m) {
 }
 
 function atualizarBannerVencidas() {
-  var vencidas = state.machines.filter(function(m) { return m.liberada && prazoVencido(m); });
+  var vencidas = state.machines.filter(function(m) { return isMaqVencida(m); });
   var banner = document.getElementById('bannerVencidas');
   if (vencidas.length > 0) {
     banner.textContent = '🚨 ' + vencidas.length + ' RECOLHA(S) ATRASADA(S)! Toque para ver';
