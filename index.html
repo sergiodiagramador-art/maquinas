@@ -562,23 +562,37 @@ if (!state) {
 function save() {
   localStorage.setItem('hm_state', JSON.stringify(state));
   if (typeof db !== 'undefined') {
-    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
+    db.collection('settings').doc('current_state').set(state).catch(function(e){ alert('Erro Firebase:' + e.message); });
   }
 }
 
 function loadFromFirebase() {
+  console.log('Iniciando loadFromFirebase...');
+  render(); // Força uma renderização imediata com o que tiver
   if (typeof db !== 'undefined') {
-    db.collection('settings').doc('current_state').onSnapshot(function(doc) {
-      if (doc.exists) {
-        var data = doc.data();
-        // Preserva o motorista selecionado localmente
-        var localDriver = getDriver();
-        state = data;
-        if (localDriver) setDriver(localDriver);
-        render();
-        renderGrid();
-        renderPanel();
-      }
+    try {
+      db.collection('settings').doc('current_state').onSnapshot(function(doc) {
+        if (doc.exists) {
+          console.log('Dados recebidos do Firebase');
+          var data = doc.data();
+          var localDriver = getDriver();
+          state = data;
+          if (localDriver) setDriver(localDriver);
+          render();
+          renderGrid();
+          renderPanel();
+        } else {
+          console.log('Documento não existe no Firebase, salvando local...');
+          save(); // Sobe o estado local se a nuvem estiver vazia
+        }
+      }, function(error) {
+        console.error('Erro no Snapshot:', error);
+      });
+    } catch(e) {
+      console.error('Erro ao conectar Firestore:', e);
+    }
+  }
+}
     });
   }
 }
