@@ -559,7 +559,16 @@ function startGPS() {
   gpsWatch = navigator.geolocation.watchPosition(function(pos) {
     gpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     checkNearby();
-  }, null, { enableHighAccuracy: true, maximumAge: 15000 });
+  }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+
+  // Verificação periódica a cada 10 segundos como backup
+  setInterval(function() {
+    if (!getDriver()) return;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      gpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      checkNearby();
+    }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+  }, 10000);
 }
 
 function dist(lat1, lng1, lat2, lng2) {
@@ -594,8 +603,8 @@ function checkNearby() {
     if (nearbyHospital !== found.id) {
       nearbyHospital = found.id;
       clearTimeout(nearbyTimer);
-      // Se tem máquina liberada, alerta IMEDIATO; senão aguarda 30 segundos
-      var delay = temLiberada ? 0 : 30 * 1000;
+      // Se tem máquina liberada, alerta IMEDIATO; senão aguarda 3 minutos
+      var delay = temLiberada ? 0 : 3 * 60 * 1000;
       nearbyTimer = setTimeout(function() {
         if (nearbyHospital === found.id) showChegouModal(found);
       }, delay);
