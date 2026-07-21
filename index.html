@@ -919,19 +919,26 @@ function renderPanel() {
     btnRota.onclick = abrirModalRota;
     alertas.appendChild(btnRota);
     state.machines.filter(function(m) { return m.liberada; }).forEach(function(m) {
-      var hNome = '';
+      var hNome = 'Hospital não informado';
       if (m.liberadaHosp) {
         var hh = state.hospitals.find(function(x) { return x.id == m.liberadaHosp; });
         if (hh) hNome = hh.nome;
+      } else if (m.hospital) {
+        var hh2 = state.hospitals.find(function(x) { return x.id == m.hospital; });
+        if (hh2) hNome = hh2.nome;
       }
+      var venc = prazoVencido(m);
       var el = document.createElement('div');
-      el.className = 'alerta-lib';
+      el.className = 'alerta-lib' + (venc ? ' vencida' : '');
       el.innerHTML =
         '<div class="anum">' + String(m.id).padStart(2,'0') + '</div>' +
         '<div class="ainfo">' +
-          '<div class="atitle">Liberar às ' + (m.liberadaTs || '?') + '</div>' +
-          '<div class="adet">' + (hNome || 'Hospital não informado') + '</div>' +
-        '</div>';
+          '<div class="atitle" style="font-size:15px;font-weight:700">' + hNome + '</div>' +
+          '<div class="adet" style="margin-top:3px">⏰ Liberada às <strong>' + (m.liberadaTs || '?') + '</strong>' +
+            (m.liberadaPrazo ? ' · prazo: <strong>' + m.liberadaPrazo + '</strong>' : '') +
+          '</div>' +
+        '</div>' +
+        (venc ? '<div style="color:#e53935;font-size:11px;font-weight:700;align-self:center">ATRASADA</div>' : '');
       alertas.appendChild(el);
     });
   }
@@ -952,9 +959,17 @@ function renderPanel() {
     var item = document.createElement('div');
     var cls = m.liberada ? ' liberada' : (m.status === 'fora' ? ' fora' : '');
     item.className = 'panel-item' + cls;
+    var hospLib = '';
+    if (m.liberada) {
+      var hLibId = m.liberadaHosp || m.hospital;
+      if (hLibId) {
+        var hLib = state.hospitals.find(function(x) { return x.id == hLibId; });
+        if (hLib) hospLib = hLib.nome;
+      }
+    }
     var statusTxt = m.liberada ? '⚡ Aguardando recolha' : (m.status === 'base' ? '✅ Na base' : '🔴 Fora da base');
     var detTxt = m.liberada
-      ? 'Liberada às ' + (m.liberadaTs || '?') + (hospNome ? hospNome : '')
+      ? (hospLib ? '<strong>' + hospLib + '</strong> · ' : '') + 'Liberada às <strong>' + (m.liberadaTs || '?') + '</strong>' + (m.liberadaPrazo ? ' · prazo: ' + m.liberadaPrazo : '')
       : (m.status === 'fora' ? (m.driver||'') + hospNome + ' · desde ' + fmt(m.since) : 'Disponível');
     item.innerHTML =
       '<div class="mnum">' + String(m.id).padStart(2,'0') + '</div>' +
