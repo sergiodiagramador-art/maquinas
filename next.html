@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang='pt-br'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <title>AZULÃO NEXT v1.0</title>
+    <style>
+        body { font-family: sans-serif; background: #001f3f; margin: 0; color: white; text-align: center; }
+        header { background: #001529; padding: 20px; font-weight: bold; border-bottom: 4px solid #ffcc00; font-size: 22px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
+        .m { background: #28a745; padding: 30px 2px; border-radius: 12px; font-weight: bold; font-size: 26px; border: 2px solid white; }
+        .m.rua { background: #ff851b; }
+        .m.hosp { background: #ffffff; color: #001f3f; border: 4px solid #001f3f; }
+        .m.manut { background: #ff4136; }
+        .m small { display: block; font-size: 11px; margin-top: 8px; text-transform: uppercase; font-weight: bold; }
+        .controls { background: #ffffff; padding: 25px; color: #333; position: fixed; bottom: 0; width: 100%; box-sizing: border-box; border-top: 3px solid #001529; }
+        select { width: 100%; padding: 18px; font-size: 18px; border-radius: 10px; border: 2px solid #001529; font-weight: bold; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <header>AZULÃO NEXT v1.0</header>
+    <div style='padding:10px; font-size:12px; color:#aaa;'>Sistema reiniciado - Zero Cache</div>
+    
+    <div id='grid' class='grid' style='padding-bottom: 150px;'></div>
+
+    <div class='controls'>
+        <label style='display:block; margin-bottom:10px; font-weight:bold; font-size:14px;'>1. ESCOLHA O HOSPITAL:</label>
+        <select id='h-select'>
+            <option value=''>-- SELECIONE O DESTINO --</option>
+            <option>Erasto Gaertner</option><option>Erastinho</option><option>Marcelino</option>
+            <option>Nossa Saúde</option><option>Nações</option><option>Pilar</option>
+            <option>Trabalhador</option><option>INC Ecoville</option><option>Santa Cruz</option>
+            <option>Sugisawa</option><option>Clínicas</option><option>Evangélico</option>
+            <option>São Vicente</option><option>IPO</option><option>Vita Batel</option>
+        </select>
+        <p style='font-size:11px; margin-top:10px;'>2. Toque na máquina para mudar</p>
+    </div>
+
+    <script>
+        let machines = Array.from({length: 18}, (_, i) => ({id: i+1, s: 'base', h: ''}));
+        const states = ['base', 'rua', 'hosp', 'manut'];
+
+        function render() {
+            document.getElementById('grid').innerHTML = machines.map(m => {
+                let label = m.h || m.s.toUpperCase();
+                return '<div class="m '+m.s+'" onclick="cycle('+m.id+')">'+m.id+'<small>'+label+'</small></div>';
+            }).join('');
+            localStorage.setItem('azulao_next_data', JSON.stringify(machines));
+        }
+
+        function cycle(id) {
+            let m = machines.find(x => x.id === id);
+            let nextState = states[(states.indexOf(m.s) + 1) % states.length];
+            
+            if(nextState === 'hosp') {
+                let h = document.getElementById('h-select').value;
+                if(!h) { alert('SELECIONE O HOSPITAL NA LISTA BRANCA ABAIXO!'); return; }
+                m.h = h;
+            } else { m.h = ''; }
+            
+            m.s = nextState;
+            render();
+        }
+
+        const saved = localStorage.getItem('azulao_next_data');
+        if(saved) machines = JSON.parse(saved);
+        render();
+    </script>
+</body>
+</html>
