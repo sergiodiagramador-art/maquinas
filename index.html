@@ -1097,7 +1097,23 @@ function toggleRotaPartida() {
 
 function abrirRota() {
   var tipo = document.getElementById('rotaPartidaTipo').value;
-  var liberadas = state.machines.filter(function(m) { return m.liberada; });
+
+  // Só inclui máquinas que já podem ser recolhidas AGORA:
+  // - atrasadas (prazo vencido) OU
+  // - liberadas sem prazo definido OU
+  // - liberadas com prazo já passado
+  var agora = new Date();
+  var liberadas = state.machines.filter(function(m) {
+    if (!m.liberada) return false;
+    if (!m.liberadaPrazo) return true; // sem prazo = pode recolher
+    var prazo = parseHHMM(m.liberadaPrazo);
+    return prazo && agora >= prazo; // só se o prazo já chegou
+  });
+
+  if (liberadas.length === 0) {
+    showToast('Nenhuma máquina disponível para recolha agora!');
+    return;
+  }
 
   // Agrupa por hospital e calcula prioridade:
   // 0 = atrasada (prazo vencido), 1 = normal
