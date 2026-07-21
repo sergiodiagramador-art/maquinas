@@ -1243,8 +1243,13 @@ function montarUrlRota(origem, waypoints, app) {
   }
 
   closeModal('modalRota');
-  showToast('Abrindo... ' + url.substring(0, 60));
-  setTimeout(function() { window.location.href = url; }, 800);
+  // Mostra URL na tela para debug
+  var dbg = document.createElement('div');
+  dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;padding:20px;overflow:auto;font-size:12px;word-break:break-all';
+  dbg.innerHTML = '<b>URL gerada:</b><br><br>' + url + 
+    '<br><br><a href="' + url + '" style="color:blue;font-size:16px">👉 Toque aqui para abrir</a>' +
+    '<br><br><button onclick="this.parentNode.remove()" style="padding:10px 20px;font-size:16px">Fechar</button>';
+  document.body.appendChild(dbg);
 }
 
 // ── SERVICE WORKER ──
