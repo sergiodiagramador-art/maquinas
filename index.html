@@ -1250,7 +1250,8 @@ function montarUrlRota(origem, waypoints, app) {
   }
 
   closeModal('modalRota');
-  window.location.href = url;
+  showToast('Abrindo... ' + url.substring(0, 60));
+  setTimeout(function() { window.location.href = url; }, 800);
 }
 
 // ── SERVICE WORKER ──
