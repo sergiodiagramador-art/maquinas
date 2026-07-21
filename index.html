@@ -1099,16 +1099,33 @@ function abrirRota() {
   var tipo = document.getElementById('rotaPartidaTipo').value;
   var liberadas = state.machines.filter(function(m) { return m.liberada; });
 
-  // Monta waypoints (hospitais das máquinas liberadas, sem duplicatas)
-  var hospIds = [];
-  var waypoints = [];
+  // Agrupa por hospital e calcula prioridade:
+  // 0 = atrasada (prazo vencido), 1 = normal
+  // Dentro de cada grupo, ordena pelo prazo mais cedo primeiro
+  var hospMap = {};
   liberadas.forEach(function(m) {
     var hid = m.liberadaHosp || m.hospital;
-    if (hid && hospIds.indexOf(hid) === -1) {
-      hospIds.push(hid);
+    if (!hid) return;
+    if (!hospMap[hid]) {
       var h = state.hospitals.find(function(x) { return x.id == hid; });
-      if (h) waypoints.push(h.lat + ',' + h.lng);
+      if (!h) return;
+      hospMap[hid] = { h: h, vencida: false, prazoMin: 9999 };
     }
+    if (prazoVencido(m)) hospMap[hid].vencida = true;
+    if (m.liberadaPrazo) {
+      var p = parseHHMM(m.liberadaPrazo);
+      if (p !== null && p < hospMap[hid].prazoMin) hospMap[hid].prazoMin = p;
+    }
+  });
+
+  // Ordena: atrasadas primeiro, depois pelo prazo mais cedo
+  var hosps = Object.values(hospMap).sort(function(a, b) {
+    if (a.vencida !== b.vencida) return a.vencida ? -1 : 1;
+    return a.prazoMin - b.prazoMin;
+  });
+
+  var waypoints = hosps.map(function(item) {
+    return item.h.lat + ',' + item.h.lng;
   });
 
   if (waypoints.length === 0) {
