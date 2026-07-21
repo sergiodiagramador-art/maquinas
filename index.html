@@ -568,10 +568,16 @@ function save() {
 
 function loadFromFirebase() {
   if (typeof db !== 'undefined') {
-    db.collection('settings').doc('current_state').get().then(function(doc) {
+    db.collection('settings').doc('current_state').onSnapshot(function(doc) {
       if (doc.exists) {
-        state = doc.data();
+        var data = doc.data();
+        // Preserva o motorista selecionado localmente
+        var localDriver = getDriver();
+        state = data;
+        if (localDriver) setDriver(localDriver);
         render();
+        renderGrid();
+        renderPanel();
       }
     });
   }
@@ -697,7 +703,8 @@ function chegouAction(tipo) {
 }
 
 // ── HELPERS ──
-function getDriver() { return document.getElementById('driverSelect').value; }
+function getDriver() { return document.getElementById('driverSelect') ? document.getElementById('driverSelect').value : ''; }
+function setDriver(val) { if (document.getElementById('driverSelect')) { document.getElementById('driverSelect').value = val; onDriverChange(); } }
 
 function onDriverChange() {
   var d = getDriver();
