@@ -564,16 +564,23 @@ function checkNearby() {
   if (found) {
     var banner = document.getElementById('nearbyBanner');
     document.getElementById('nearbyTitle').textContent = '📍 Próximo: ' + found.nome;
-    document.getElementById('nearbySub').textContent = 'Permanecendo no local, você será perguntado em 3 minutos.';
+    // Verifica se tem máquinas liberadas neste hospital
+    var temLiberada = state.machines.some(function(m) {
+      return m.liberada && (m.liberadaHosp == found.id || m.hospital == found.id);
+    });
+    document.getElementById('nearbySub').textContent = temLiberada
+      ? '⚡ Há máquinas aguardando recolha aqui! Toque para registrar.'
+      : 'Toque para registrar entrada/saída.';
     banner.style.display = 'block';
 
     if (nearbyHospital !== found.id) {
       nearbyHospital = found.id;
-      nearbyAlerted = found.id;
       clearTimeout(nearbyTimer);
+      // Se tem máquina liberada, alerta IMEDIATO; senão aguarda 30 segundos
+      var delay = temLiberada ? 0 : 30 * 1000;
       nearbyTimer = setTimeout(function() {
         if (nearbyHospital === found.id) showChegouModal(found);
-      }, 3 * 60 * 1000); // 3 minutos
+      }, delay);
     }
   } else {
     document.getElementById('nearbyBanner').style.display = 'none';
@@ -1131,9 +1138,34 @@ function abrirRota() {
 }
 
 function montarUrlRota(origem, waypoints) {
-  // Google Maps directions URL com waypoints
-  var destino = waypoints[waypoints.length - 1];
-  var wps = waypoints.slice(0, -1);
+  // Otimiza a ordem dos waypoints pelo vizinho mais próximo
+  var pts = waypoints.map(function(w) {
+    var parts = w.split(',');
+    return { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]), orig: w };
+  });
+
+  function distPts(a, b) {
+    var dLat = a.lat - b.lat, dLng = a.lng - b.lng;
+    return dLat*dLat + dLng*dLng; // distância euclidiana simples para ordenação
+  }
+
+  // Ponto de partida: tenta parsear origem como lat,lng ou usa primeiro ponto
+  var origemParts = origem.split(',');
+  var cur = { lat: parseFloat(origemParts[0]), lng: parseFloat(origemParts[1]) };
+  var ordered = [];
+  var remaining = pts.slice();
+  while (remaining.length > 0) {
+    var best = 0;
+    for (var i = 1; i < remaining.length; i++) {
+      if (distPts(cur, remaining[i]) < distPts(cur, remaining[best])) best = i;
+    }
+    ordered.push(remaining[best]);
+    cur = remaining[best];
+    remaining.splice(best, 1);
+  }
+
+  var destino = ordered[ordered.length - 1].orig;
+  var wps = ordered.slice(0, -1).map(function(p) { return p.orig; });
   var url = 'https://www.google.com/maps/dir/?api=1' +
     '&origin=' + origem +
     '&destination=' + destino +
