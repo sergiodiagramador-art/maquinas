@@ -277,7 +277,7 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 
 .empty-state { text-align: center; padding: 30px 20px; color: #aaa; font-size: 13px; }
 .empty-state .ei { font-size: 36px; margin-bottom: 8px; }
-.hosp-card { background: white; padding: 15px; margin: 10px; border-radius: 8px; border-left: 5px solid #0056b3; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } .hosp-name { font-weight: bold; color: #333; font-size: 16px; }</style>
+</style>
 </head>
 <body>
 <div id="bannerVencidas" onclick="switchView('painel')">🚨 RECOLHA ATRASADA! Toque para ver</div>
@@ -364,7 +364,9 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
   </div>
 </div>
 
-<div id="view-hospitais" class="view"><div style="padding:10px;"><button class="btn btn-green" style="width:100%; margin:0; font-weight:bold; height:50px;" onclick="addHosp()">➕ CADASTRAR NOVO HOSPITAL</button></div><div id="lista-hospitais"></div></div> GPS ativo
+<div id="view-hospitais" class="view">
+  <div class="gps-indicator" id="gpsIndicator" style="display:none">
+    <div class="gps-dot"></div> GPS ativo
   </div>
   <button class="btn btn-primary" onclick="cadastrarHospital()">📍 Cadastrar hospital nesta localização</button>
   <div class="section-label">Hospitais cadastrados</div>
@@ -501,31 +503,935 @@ label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; disp
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-const DEFAULT_HOSPITALS = ["Nossa Saúde", "Hospital das Nações", "Hospital Erasto Gaertner", "Hospital Erastinho", "Hospital Pilar", "Hospital N. Sra. das Graças", "Hospital Marcelino Champagnat", "Hospital INC Ecoville", "Hospital do Trabalhador", "Maternidade Marillac", "Hospital Fraturas - Alto da XV", "Hospital Oswaldo Cruz", "Hospital São Lucas", "Yoshimi", "Buenos Aires, 792"];
-let state;
-function save() { localStorage.setItem('hm_v13_stable', JSON.stringify(state)); }
-function init() {
-    const saved = localStorage.getItem('hm_v13_stable');
-    if (saved) { state = JSON.parse(saved); } else {
-        state = { machines: Array.from({length: 18}, (_, i) => ({id: i+1, status: 'base', hospital: ''})), hospitals: [...DEFAULT_HOSPITALS], logs: [] };
-        save();
+  const firebaseConfig = {
+    apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
+    authDomain: "sosrim-592ab.firebaseapp.com",
+    projectId: "sosrim-592ab",
+    storageBucket: "sosrim-592ab.firebasestorage.app",
+    messagingSenderId: "483781840617",
+    appId: "1:483781840617:web:02a3d62b3e79f5b001ea78",
+    measurementId: "G-HW70F0DEEH"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+// ── STATE ──
+var TOTAL = 18;
+var PRESET_HOSPITALS = [
+  { id: 'p1',  nome: 'Hospital Erasto Gaertner',        lat: -25.4535814,  lng: -49.2388060,  raio: 60 },
+  { id: 'p2',  nome: 'Hospital Erastinho',               lat: -25.4528189,  lng: -49.2386190,  raio: 60 },
+  { id: 'p3',  nome: 'Hospital Pilar',                   lat: -25.4155502,  lng: -49.2789642,  raio: 150 },
+  { id: 'p4',  nome: 'Centro Hospitalar Nossa Saúde',    lat: -25.4202592,  lng: -49.2921622,  raio: 150 },
+  { id: 'p5',  nome: 'Hospital Nossa Senhora das Graças',lat: -25.4210967,  lng: -49.290718,   raio: 150 },
+  { id: 'p6',  nome: 'Hospital São Marcelino Champagnat',lat: -25.4360463,  lng: -49.2463727,  raio: 150 },
+  { id: 'p7',  nome: 'Hospital Ônix Batel',              lat: -25.4418182,  lng: -49.2980751,  raio: 150 },
+  { id: 'p8',  nome: 'Hospital Ônix Mateus Leme',        lat: -25.3972,     lng: -49.3110,     raio: 150 },
+  { id: 'p9',  nome: 'Maternidade do Trabalhador',       lat: -25.4350,     lng: -49.2620,     raio: 150 },
+  { id: 'p10', nome: 'Maternidade Marillac',             lat: -25.4180,     lng: -49.2700,     raio: 150 },
+  { id: 'p11', nome: 'INC - Campo Comprido',             lat: -25.4431431,  lng: -49.3384167,  raio: 150 },
+  { id: 'p12', nome: 'Hospital Fraturas - Alto da XV',   lat: -25.4265732,  lng: -49.252862,   raio: 150 },
+  { id: 'p13', nome: 'Hospital Oswaldo Cruz',            lat: -25.4252294,  lng: -49.2587881,  raio: 150 },
+  { id: 'p14', nome: 'Hospital São Lucas',               lat: -25.4048,     lng: -49.2627,     raio: 150 },
+  { id: 'p15', nome: 'Yoshimi',                          lat: -25.4064179,  lng: -49.1976728,  raio: 150 }
+];
+
+var state = JSON.parse(localStorage.getItem('hm_state') || 'null');
+if (!state) {
+  state = {
+    machines: [],
+    hospitals: [],
+    history: [],
+    fechamentos: []
+  };
+  for (var i = 1; i <= TOTAL; i++) {
+    state.machines.push({ id: i, status: 'base', driver: null, hospital: null, since: null, liberada: false, liberadaTs: null, liberadaHosp: null });
+  }
+  // Pré-carrega os hospitais cadastrados
+  state.hospitals = PRESET_HOSPITALS.map(function(h) { return Object.assign({}, h); });
+  save();
+} else {
+  // Adiciona hospitais pré-definidos que ainda não existem no estado salvo
+  PRESET_HOSPITALS.forEach(function(ph) {
+    var existe = state.hospitals.find(function(h) { return h.id === ph.id; });
+    if (!existe) state.hospitals.push(Object.assign({}, ph));
+    else { existe.nome = ph.nome; existe.lat = ph.lat; existe.lng = ph.lng; existe.raio = ph.raio; }
+  });
+  save();
+}
+
+function save() {
+  localStorage.setItem('hm_state', JSON.stringify(state));
+  if (typeof db !== 'undefined') {
+    db.collection('settings').doc('current_state').set(state).catch(function(e){ console.error('Firebase save error:', e); });
+  }
+}
+
+function loadFromFirebase() {
+  if (typeof db !== 'undefined') {
+    db.collection('settings').doc('current_state').get().then(function(doc) {
+      if (doc.exists) {
+        state = doc.data();
+        render();
+      }
+    });
+  }
+}
+
+// ── GPS ──
+var gpsPos = null;
+var gpsWatch = null;
+var nearbyHospital = null;
+var nearbyTimer = null;
+var nearbyAlerted = null;
+
+function startGPS() {
+  if (!navigator.geolocation) return;
+  document.getElementById('gpsIndicator').style.display = 'flex';
+  gpsWatch = navigator.geolocation.watchPosition(function(pos) {
+    gpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    checkNearby();
+  }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+
+  // Verificação periódica a cada 10 segundos como backup
+  setInterval(function() {
+    if (!getDriver()) return;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      gpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      checkNearby();
+    }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+  }, 10000);
+}
+
+function dist(lat1, lng1, lat2, lng2) {
+  var R = 6371000;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkNearby() {
+  if (!gpsPos || !getDriver()) return;
+  var found = null;
+  state.hospitals.forEach(function(h) {
+    var d = dist(gpsPos.lat, gpsPos.lng, h.lat, h.lng);
+    if (d <= (h.raio || 200)) found = h;
+  });
+
+  if (found) {
+    var banner = document.getElementById('nearbyBanner');
+    document.getElementById('nearbyTitle').textContent = '📍 Próximo: ' + found.nome;
+    // Verifica se tem máquinas liberadas neste hospital
+    var temLiberada = state.machines.some(function(m) {
+      return m.liberada && (m.liberadaHosp == found.id || m.hospital == found.id);
+    });
+    document.getElementById('nearbySub').textContent = temLiberada
+      ? '⚡ Há máquinas aguardando recolha aqui! Toque para registrar.'
+      : 'Toque para registrar entrada/saída.';
+    banner.style.display = 'block';
+
+    if (nearbyHospital !== found.id) {
+      nearbyHospital = found.id;
+      clearTimeout(nearbyTimer);
+      // Se tem máquina liberada, alerta IMEDIATO; senão aguarda 3 minutos
+      var delay = temLiberada ? 0 : 3 * 60 * 1000;
+      nearbyTimer = setTimeout(function() {
+        if (nearbyHospital === found.id) showChegouModal(found);
+      }, delay);
     }
-    renderAll();
+  } else {
+    document.getElementById('nearbyBanner').style.display = 'none';
+    nearbyHospital = null;
+    clearTimeout(nearbyTimer);
+  }
 }
-function renderAll() {
-    const gridMot = document.getElementById('grid-motorista'); if(gridMot) gridMot.innerHTML = state.machines.map(m => `<div class="machine-card ${m.status}" onclick="abrirModal(${m.id})"><strong>${m.id}</strong><br><small>${m.status === 'hospital' ? m.hospital : m.status.toUpperCase()}</small></div>`).join('');
-    const panel = document.getElementById('panel-grid'); if(panel) panel.innerHTML = state.machines.map(m => `<div class="machine-card ${m.status}"><strong>${m.id}</strong><br><small>${m.status === 'hospital' ? m.hospital : m.status.toUpperCase()}</small></div>`).join('');
-    const listHosp = document.getElementById('lista-hospitais'); if(listHosp) listHosp.innerHTML = state.hospitals.sort().map(h => `<div class="hosp-card"><span class="hosp-name">${h}</span><button class="btn btn-red" style="margin:0; padding:5px 10px;" onclick="delHosp('${h}')">Excluir</button></div>`).join('');
+
+function openNearbyModal() {
+  var h = state.hospitals.find(function(x) { return x.id === nearbyHospital; });
+  if (h) showChegouModal(h);
 }
-function abrirModal(id) { window.activeMachineId = id; const m = state.machines.find(x => x.id === id); document.getElementById('modal-title').textContent = 'Máquina ' + id; const sel = document.getElementById('select-hospital'); sel.innerHTML = '<option value="">Selecione o Hospital...</option>' + state.hospitals.sort().map(h => `<option value="${h}" ${m.hospital===h?'selected':''}>${h}</option>`).join(''); document.getElementById('modal').style.display = 'flex'; }
-function fecharModal() { document.getElementById('modal').style.display = 'none'; }
-function updateStatus(st) { const m = state.machines.find(x => x.id === activeMachineId); const h = document.getElementById('select-hospital').value; const drv = document.getElementById('active-driver').value; if (st === 'hospital' && !h) { alert('Selecione um hospital!'); return; } m.status = st; m.hospital = st === 'hospital' ? h : ''; state.logs.push({time: new Date().toLocaleTimeString().slice(0,5), msg: `${drv}: M${m.id} -> ${st==='hospital'?h:st}`}); save(); renderAll(); fecharModal(); }
-function saidaLote() { const drv = document.getElementById('active-driver').value; const q = prompt("Quantas máquinas estão saindo?"); if (!q || isNaN(q)) return; const h = prompt("Para qual hospital?"); let count = 0; for (let m of state.machines) { if (m.status === 'base' && count < parseInt(q)) { m.status = h ? 'hospital' : 'rua'; m.hospital = h || ''; count++; } } if (count > 0) { state.logs.push({time: new Date().toLocaleTimeString().slice(0,5), msg: `LOTE: ${drv} levou ${count} p/ ${h||'Rua'}`}); save(); renderAll(); } }
-function retornoLote() { const drv = document.getElementById('active-driver').value; const q = prompt("Quantas máquinas?"); if (!q || isNaN(q)) return; let count = 0; for (let m of state.machines) { if (m.status !== 'base' && m.status !== 'manutencao' && count < parseInt(q)) { m.status = 'base'; m.hospital = ''; count++; } } if (count > 0) { state.logs.push({time: new Date().toLocaleTimeString().slice(0,5), msg: `LOTE: ${drv} trouxe ${count} p/ Base`}); save(); renderAll(); } }
-function addHosp() { const n = prompt("Nome do novo hospital:"); if (n) { state.hospitals.push(n); save(); renderAll(); } }
-function delHosp(n) { if (confirm(`Remover "${n}" da lista?`)) { state.hospitals = state.hospitals.filter(h => h !== n); save(); renderAll(); } }
-function switchView(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById('view-' + id).classList.add('active'); document.getElementById('nav-' + id).classList.add('active'); }
-window.onload = init;
+
+function showChegouModal(h) {
+  document.getElementById('chegouTitle').textContent = '🏥 ' + h.nome;
+  document.getElementById('chegouSub').textContent = 'Você está neste hospital. O que aconteceu?';
+  document.getElementById('chegouTitle').dataset.hid = h.id;
+  document.getElementById('modalChegou').classList.add('open');
+
+  // Notificação nativa para aparecer em primeiro plano
+  if ('Notification' in window && Notification.permission === 'granted') {
+    var n = new Notification('🏥 ' + h.nome, {
+      body: 'Você está há 3 minutos no local. Abra o app para registrar.',
+      icon: '',
+      requireInteraction: true,
+      tag: 'hospital-chegou'
+    });
+    n.onclick = function() { window.focus(); n.close(); };
+  } else if ('Notification' in window && Notification.permission !== 'denied') {
+    Notification.requestPermission().then(function(perm) {
+      if (perm === 'granted') showChegouModal(h);
+    });
+  }
+
+  // Vibrar se disponível
+  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+}
+
+function chegouAction(tipo) {
+  var driver = getDriver();
+  var hid = document.getElementById('chegouTitle').dataset.hid;
+  var h = state.hospitals.find(function(x) { return x.id == hid; });
+  closeModal('modalChegou');
+
+  if (tipo === 'nada') return;
+
+  if (tipo === 'material') {
+    openMaterialModal();
+    return;
+  }
+
+  // Abre modal de máquina mas no contexto do hospital
+  // Para simplificar, vai para a aba motorista
+  switchView('home');
+  showToast('Selecione a máquina que ' + (tipo === 'saida' ? 'saiu' : 'retornou'));
+}
+
+// ── HELPERS ──
+function getDriver() { return document.getElementById('driverSelect').value; }
+
+function onDriverChange() {
+  var d = getDriver();
+  document.getElementById('headerSub').textContent = d || 'Selecione o motorista';
+  renderGrid();
+  if (d) {
+    startGPS();
+    // Pede permissão de notificação para aparecer em primeiro plano
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+}
+
+function fmt(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function fmtFull(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+// ── MACHINES ──
+function renderGrid() {
+  var grid = document.getElementById('machinesGrid');
+  grid.innerHTML = '';
+  state.machines.forEach(function(m) {
+    var card = document.createElement('div');
+    var vencida = isMaqVencida(m);
+    var cls = vencida ? 'vencida' : (m.liberada ? 'liberada' : (m.status === 'base' ? 'na-base' : 'fora'));
+    card.className = 'machine-card ' + cls;
+    var lbl = vencida ? '🚨ATRASADA' : (m.liberada ? '⚡RECOLHA' : (m.status === 'base' ? 'BASE' : 'FORA'));
+    var sub = vencida ? ('prazo: ' + m.liberadaPrazo) : (m.liberada ? (m.liberadaTs || '') : (m.driver || ''));
+    card.innerHTML =
+      '<div class="num">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="slabel">' + lbl + '</div>' +
+      '<div class="dname">' + sub + '</div>';
+    card.onclick = function() { openMaqModal(m.id); };
+    grid.appendChild(card);
+  });
+}
+
+var selectedMaq = null;
+
+function openMaqModal(id) {
+  selectedMaq = id;
+  var m = state.machines[id - 1];
+  document.getElementById('maqTitle').textContent = 'Máquina ' + String(id).padStart(2,'0');
+
+  var hospSel = document.getElementById('maqHospitalSel');
+  var hospSelect = document.getElementById('maqHospital');
+  hospSelect.innerHTML = '<option value="">— Sem hospital específico —</option>';
+  state.hospitals.forEach(function(h) {
+    hospSelect.innerHTML += '<option value="' + h.id + '">' + h.nome + '</option>';
+  });
+
+  if (m.liberada) {
+    var hNome = '';
+    if (m.liberadaHosp) {
+      var hh = state.hospitals.find(function(x) { return x.id == m.liberadaHosp; });
+      if (hh) hNome = ' · ' + hh.nome;
+    }
+    document.getElementById('maqStatus').textContent = '⚡ Aguardando recolha — liberada às ' + (m.liberadaTs || '?') + hNome;
+    document.getElementById('btnSaida').style.display = 'none';
+    document.getElementById('btnRetorno').style.display = 'block';
+    document.getElementById('btnLiberar').style.display = 'none';
+    document.getElementById('btnCancelarLib').style.display = 'block';
+    hospSel.style.display = 'none';
+  } else if (m.status === 'base') {
+    document.getElementById('maqStatus').textContent = '✅ Na base — disponível';
+    document.getElementById('btnSaida').style.display = 'block';
+    document.getElementById('btnRetorno').style.display = 'none';
+    document.getElementById('btnLiberar').style.display = 'none';
+    document.getElementById('btnCancelarLib').style.display = 'none';
+    hospSel.style.display = 'block';
+  } else {
+    var hospNome = '';
+    if (m.hospital) {
+      var h = state.hospitals.find(function(x) { return x.id == m.hospital; });
+      if (h) hospNome = ' · ' + h.nome;
+    }
+    document.getElementById('maqStatus').textContent = '🔴 Fora — ' + (m.driver || '') + hospNome + ' · desde ' + fmt(m.since);
+    document.getElementById('btnSaida').style.display = 'none';
+    document.getElementById('btnRetorno').style.display = 'block';
+    document.getElementById('btnLiberar').style.display = 'block';
+    document.getElementById('btnCancelarLib').style.display = 'none';
+    hospSel.style.display = 'none';
+  }
+
+  document.getElementById('modalMaquina').classList.add('open');
+}
+
+function regMovimento(tipo) {
+  var driver = getDriver();
+  var m = state.machines[selectedMaq - 1];
+  var hospId = document.getElementById('maqHospital').value;
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) hospNome = h.nome;
+  }
+
+  if (tipo === 'saida') {
+    m.status = 'fora';
+    m.driver = driver;
+    m.hospital = hospId || null;
+    m.since = new Date().toISOString();
+    addHistory('saida', 'Máquina ' + String(m.id).padStart(2,'0') + ' saiu' + (hospNome ? ' → ' + hospNome : ''), driver);
+    showToast('Máquina ' + String(m.id).padStart(2,'0') + ' registrada como SAÍDA');
+  } else {
+    m.status = 'base';
+    var prev = m.driver;
+    m.driver = null; m.hospital = null; m.since = null;
+    m.liberada = false; m.liberadaTs = null; m.liberadaHosp = null; m.liberadaPrazo = null;
+    addHistory('retorno', 'Máquina ' + String(m.id).padStart(2,'0') + ' retornou à base', prev || driver);
+    showToast('Máquina ' + String(m.id).padStart(2,'0') + ' retornou à base');
+  }
+
+  save();
+  closeModal('modalMaquina');
+  renderGrid();
+  renderPanel();
+  renderFechGrid();
+}
+
+// ── MATERIAL ──
+function openMaterialModal() {
+  if (!getDriver()) { showToast('Selecione seu nome primeiro!'); return; }
+  var sel = document.getElementById('matHospital');
+  sel.innerHTML = '<option value="">— Sem hospital específico —</option>';
+  state.hospitals.forEach(function(h) {
+    sel.innerHTML += '<option value="' + h.id + '">' + h.nome + '</option>';
+  });
+  document.getElementById('matDesc').value = '';
+  document.getElementById('modalMaterial').classList.add('open');
+}
+
+function regMaterial() {
+  var driver = getDriver();
+  var tipo = document.getElementById('matTipo').value;
+  var desc = document.getElementById('matDesc').value.trim();
+  if (!desc) { showToast('Descreva o material!'); return; }
+  var hospId = document.getElementById('matHospital').value;
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) hospNome = ' · ' + h.nome;
+  }
+  var label = (tipo === 'saida' ? 'Saída' : 'Retorno') + ': ' + desc + hospNome;
+  addHistory('material', label, driver);
+  showToast('Material registrado!');
+  closeModal('modalMaterial');
+  renderHistorico();
+}
+
+// ── HOSPITAIS ──
+var tempCoords = null;
+
+function cadastrarHospital() {
+  if (!navigator.geolocation) { showToast('GPS não disponível neste dispositivo'); return; }
+  showToast('Obtendo localização...');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    tempCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    document.getElementById('hospCoordSub').textContent =
+      'Lat: ' + tempCoords.lat.toFixed(5) + ', Lng: ' + tempCoords.lng.toFixed(5);
+    document.getElementById('hospNome').value = '';
+    document.getElementById('hospRaio').value = '200';
+    document.getElementById('modalHospital').classList.add('open');
+  }, function() {
+    showToast('Não foi possível obter o GPS. Ative a localização.');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function salvarHospital() {
+  var nome = document.getElementById('hospNome').value.trim();
+  var raio = parseInt(document.getElementById('hospRaio').value) || 200;
+  if (!nome) { showToast('Digite o nome do hospital!'); return; }
+  if (!tempCoords) { showToast('Sem coordenadas GPS!'); return; }
+
+  state.hospitals.push({
+    id: Date.now(),
+    nome: nome,
+    lat: tempCoords.lat,
+    lng: tempCoords.lng,
+    raio: raio
+  });
+  save();
+  closeModal('modalHospital');
+  renderHospitals();
+  renderHospitalSelects();
+  showToast('Hospital "' + nome + '" cadastrado!');
+}
+
+function deletarHospital(id) {
+  state.hospitals = state.hospitals.filter(function(h) { return h.id !== id; });
+  save();
+  renderHospitals();
+}
+
+function renderHospitals() {
+  var list = document.getElementById('hospitalList');
+  if (!state.hospitals.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">🏥</div>Nenhum hospital cadastrado.<br>Vá até o hospital e toque em "Cadastrar hospital nesta localização".</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.hospitals.forEach(function(h) {
+    var item = document.createElement('div');
+    item.className = 'hospital-item';
+    item.innerHTML =
+      '<div class="hicon">🏥</div>' +
+      '<div class="hinfo">' +
+        '<div class="hname">' + h.nome + '</div>' +
+        '<div class="hcoord">Raio: ' + (h.raio||200) + 'm · ' + h.lat.toFixed(4) + ', ' + h.lng.toFixed(4) + '</div>' +
+      '</div>' +
+      '<button class="hdel" onclick="deletarHospital(' + h.id + ')">🗑️</button>';
+    list.appendChild(item);
+  });
+}
+
+function renderHospitalSelects() {
+  // updated when modal opens
+}
+
+// ── HISTORY ──
+function addHistory(tipo, texto, motorista) {
+  state.history.unshift({
+    tipo: tipo,
+    texto: texto,
+    motorista: motorista,
+    ts: new Date().toISOString()
+  });
+  if (state.history.length > 200) state.history = state.history.slice(0, 200);
+  save();
+  renderHistorico();
+}
+
+function renderHistorico() {
+  var list = document.getElementById('histList');
+  if (!state.history.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">📋</div>Nenhuma movimentação registrada ainda.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.history.forEach(function(h) {
+    var labels = { saida:'SAÍDA', retorno:'RETORNO', material:'MATERIAL', fechamento:'FECHAMENTO' };
+    var item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML =
+      '<div><div class="hbadge ' + h.tipo + '">' + (labels[h.tipo]||h.tipo) + '</div></div>' +
+      '<div class="htext">' + h.texto +
+        '<div class="htime">' + fmtFull(h.ts) + ' · ' + (h.motorista||'') + '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+function clearHistory() {
+  if (!confirm('Limpar todo o histórico?')) return;
+  state.history = [];
+  save();
+  renderHistorico();
+}
+
+// ── PANEL ──
+function renderPanel() {
+  var base = state.machines.filter(function(m) { return m.status === 'base' && !m.liberada; }).length;
+  var fora = state.machines.filter(function(m) { return m.status === 'fora'; }).length;
+  var lib  = state.machines.filter(function(m) { return m.liberada; }).length;
+  document.getElementById('statBase').textContent = base;
+  document.getElementById('statFora').textContent = fora;
+
+  // Painel de alertas
+  var alertas = document.getElementById('painelAlertas');
+  alertas.innerHTML = '';
+  if (lib > 0) {
+    var alTitle = document.createElement('div');
+    alTitle.className = 'section-label';
+    alTitle.style.color = '#e65100';
+    alTitle.textContent = '⚡ Aguardando recolha (' + lib + ')';
+    alertas.appendChild(alTitle);
+    // Botão de rota
+    var btnRota = document.createElement('button');
+    btnRota.className = 'btn btn-primary';
+    btnRota.style.marginBottom = '10px';
+    btnRota.textContent = '🗺️ Traçar rota de recolha';
+    btnRota.onclick = abrirModalRota;
+    alertas.appendChild(btnRota);
+    state.machines.filter(function(m) { return m.liberada; }).forEach(function(m) {
+      var hNome = 'Hospital não informado';
+      if (m.liberadaHosp) {
+        var hh = state.hospitals.find(function(x) { return x.id == m.liberadaHosp; });
+        if (hh) hNome = hh.nome;
+      } else if (m.hospital) {
+        var hh2 = state.hospitals.find(function(x) { return x.id == m.hospital; });
+        if (hh2) hNome = hh2.nome;
+      }
+      var venc = prazoVencido(m);
+      var el = document.createElement('div');
+      el.className = 'alerta-lib' + (venc ? ' vencida' : '');
+      el.innerHTML =
+        '<div class="anum">' + String(m.id).padStart(2,'0') + '</div>' +
+        '<div class="ainfo">' +
+          '<div class="atitle" style="font-size:15px;font-weight:700">' + hNome + '</div>' +
+          '<div class="adet" style="margin-top:3px">⏰ Liberada às <strong>' + (m.liberadaTs || '?') + '</strong>' +
+            (m.liberadaPrazo ? ' · prazo: <strong>' + m.liberadaPrazo + '</strong>' : '') +
+          '</div>' +
+        '</div>' +
+        (venc ? '<div style="color:#e53935;font-size:11px;font-weight:700;align-self:center">ATRASADA</div>' : '');
+      alertas.appendChild(el);
+    });
+  }
+
+  var list = document.getElementById('panelList');
+  list.innerHTML = '';
+  var sorted = state.machines.slice().sort(function(a,b) {
+    var pri = function(x) { return x.liberada ? 0 : x.status === 'fora' ? 1 : 2; };
+    if (pri(a) !== pri(b)) return pri(a) - pri(b);
+    return a.id - b.id;
+  });
+  sorted.forEach(function(m) {
+    var hospNome = '';
+    if (m.hospital) {
+      var h = state.hospitals.find(function(x) { return x.id == m.hospital; });
+      if (h) hospNome = ' · ' + h.nome;
+    }
+    var item = document.createElement('div');
+    var cls = m.liberada ? ' liberada' : (m.status === 'fora' ? ' fora' : '');
+    item.className = 'panel-item' + cls;
+    var hospLib = '';
+    if (m.liberada) {
+      var hLibId = m.liberadaHosp || m.hospital;
+      if (hLibId) {
+        var hLib = state.hospitals.find(function(x) { return x.id == hLibId; });
+        if (hLib) hospLib = hLib.nome;
+      }
+    }
+    var statusTxt = m.liberada ? '⚡ Aguardando recolha' : (m.status === 'base' ? '✅ Na base' : '🔴 Fora da base');
+    var detTxt = m.liberada
+      ? (hospLib ? '<strong>' + hospLib + '</strong> · ' : '') + 'Liberada às <strong>' + (m.liberadaTs || '?') + '</strong>' + (m.liberadaPrazo ? ' · prazo: ' + m.liberadaPrazo : '')
+      : (m.status === 'fora' ? (m.driver||'') + hospNome + ' · desde ' + fmt(m.since) : 'Disponível');
+    item.innerHTML =
+      '<div class="mnum">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="minfo">' +
+        '<div class="mstatus">' + statusTxt + '</div>' +
+        '<div class="mdetail">' + detTxt + '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+// ── FECHAMENTO ──
+var fechStatus = {};
+
+function renderFechGrid() {
+  var grid = document.getElementById('fechGrid');
+  grid.innerHTML = '';
+  state.machines.forEach(function(m) {
+    var st = fechStatus[m.id] !== undefined ? fechStatus[m.id] : m.status;
+    var card = document.createElement('div');
+    card.className = 'fech-card ' + (st === 'base' ? 'na-base' : 'fora');
+    card.innerHTML =
+      '<div class="fnum">' + String(m.id).padStart(2,'0') + '</div>' +
+      '<div class="fstatus">' + (st === 'base' ? 'BASE' : 'FORA') + '</div>';
+    card.onclick = function() {
+      fechStatus[m.id] = (st === 'base' ? 'fora' : 'base');
+      renderFechGrid();
+    };
+    grid.appendChild(card);
+  });
+}
+
+function confirmarFechamento() {
+  if (!getDriver()) { showToast('Selecione o motorista!'); return; }
+  var driver = getDriver();
+
+  // Apply fechStatus overrides
+  state.machines.forEach(function(m) {
+    if (fechStatus[m.id] !== undefined) {
+      m.status = fechStatus[m.id];
+      if (m.status === 'base') { m.driver = null; m.hospital = null; m.since = null; }
+    }
+  });
+  fechStatus = {};
+
+  var base = state.machines.filter(function(m) { return m.status === 'base'; }).length;
+  var fora = TOTAL - base;
+  var obs = document.getElementById('fechObs').value.trim();
+  var resumo = 'Fechamento: ' + base + ' na base, ' + fora + ' em campo' + (obs ? ' · ' + obs : '');
+
+  addHistory('fechamento', resumo, driver);
+  save();
+  renderGrid();
+  renderPanel();
+  renderFechGrid();
+  document.getElementById('fechObs').value = '';
+  showToast('Expediente encerrado!');
+  switchView('historico');
+}
+
+// ── NAV ──
+var views = ['home','painel','hospitais','historico','fechamento'];
+
+function switchView(name) {
+  views.forEach(function(v) {
+    document.getElementById('view-'+v).classList.toggle('active', v === name);
+  });
+  document.querySelectorAll('.nav-btn').forEach(function(btn, i) {
+    btn.classList.toggle('active', views[i] === name);
+  });
+  if (name === 'painel') renderPanel();
+  if (name === 'hospitais') renderHospitals();
+  if (name === 'historico') renderHistorico();
+  if (name === 'fechamento') renderFechGrid();
+}
+
+// ── MODAL ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalBg(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+// ── TOAST ──
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── ROTA DE RECOLHA ──
+function abrirModalRota() {
+  var liberadas = state.machines.filter(function(m) { return m.liberada; });
+  if (liberadas.length === 0) {
+    showToast('Nenhuma máquina aguardando recolha!');
+    return;
+  }
+  document.getElementById('rotaSub').textContent =
+    liberadas.length + ' máquina(s) aguardando recolha.';
+  var baseEnd = localStorage.getItem('baseEndereco') || '';
+  document.getElementById('rotaBaseEnd').value = baseEnd;
+  document.getElementById('modalRota').classList.add('open');
+}
+
+function toggleRotaPartida() {
+  var tipo = document.getElementById('rotaPartidaTipo').value;
+  document.getElementById('rotaBaseDiv').style.display   = tipo === 'base'   ? 'block' : 'none';
+  document.getElementById('rotaManualDiv').style.display = tipo === 'manual' ? 'block' : 'none';
+  document.getElementById('rotaGpsDiv').style.display    = tipo === 'gps'    ? 'block' : 'none';
+}
+
+function abrirRota(app) {
+  app = app || 'maps';
+
+  // Coleta coordenadas dos hospitais com máquinas liberadas (por prazo)
+  var agora = new Date();
+  var liberadas = state.machines.filter(function(m) {
+    if (!m.liberada) return false;
+    if (!m.liberadaPrazo) return true;
+    var p = parseHHMM(m.liberadaPrazo);
+    return !p || agora >= p;
+  });
+  if (liberadas.length === 0) {
+    liberadas = state.machines.filter(function(m) { return m.liberada; });
+  }
+  if (liberadas.length === 0) {
+    showToast('Nenhuma máquina liberada!'); return;
+  }
+
+  // Monta lista de coordenadas únicas por hospital
+  var coords = [];
+  var vistos = {};
+  liberadas.forEach(function(m) {
+    var hid = m.liberadaHosp || m.hospital;
+    if (!hid || vistos[hid]) return;
+    var h = state.hospitals.find(function(x) { return x.id == hid; });
+    if (!h) return;
+    vistos[hid] = true;
+    coords.push(h.lat.toFixed(6) + ',' + h.lng.toFixed(6));
+  });
+
+  if (coords.length === 0) {
+    showToast('Nenhum hospital vinculado às máquinas liberadas!'); return;
+  }
+
+  var tipo = document.getElementById('rotaPartidaTipo').value;
+
+  if (tipo === 'gps') {
+    if (!navigator.geolocation) { showToast('GPS indisponível!'); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var orig = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
+        _abrirMapa(app, orig, coords);
+      },
+      function() { showToast('Não foi possível obter GPS.'); }
+    );
+  } else if (tipo === 'manual') {
+    var end = document.getElementById('rotaManualEnd').value.trim();
+    if (!end) { showToast('Digite o endereço de partida!'); return; }
+    _abrirMapa(app, encodeURIComponent(end), coords);
+  } else {
+    var base = document.getElementById('rotaBaseEnd').value.trim();
+    if (!base) { showToast('Digite o endereço da base!'); return; }
+    localStorage.setItem('baseEndereco', base);
+    _abrirMapa(app, encodeURIComponent(base), coords);
+  }
+}
+
+function _abrirMapa(app, origem, coords) {
+  closeModal('modalRota');
+  var url;
+  if (app === 'waze') {
+    var p = coords[0].split(',');
+    url = 'https://ul.waze.com/ul?ll=' + p[0] + '%2C' + p[1] + '&navigate=yes';
+    if (coords.length > 1) showToast('Waze: ' + coords.length + ' paradas, abrindo a 1ª');
+  } else {
+    url = 'https://www.google.com/maps/dir/' + origem + '/' + coords.join('/');
+  }
+  // Abre modal com link direto para o usuário tocar
+  var dbg = document.createElement('div');
+  dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px';
+  var a = document.createElement('a');
+  a.href = url;
+  a.textContent = app === 'waze' ? '🚕 Abrir no Waze' : '🗺️ Abrir no Google Maps';
+  a.style.cssText = 'display:block;background:#1a73e8;color:white;padding:18px 32px;border-radius:14px;font-size:18px;font-weight:700;text-decoration:none;text-align:center';
+  var btn = document.createElement('button');
+  btn.textContent = 'Fechar';
+  btn.style.cssText = 'padding:12px 32px;font-size:16px;border-radius:10px;border:none;background:#eee;color:#333';
+  btn.onclick = function() { dbg.remove(); };
+  dbg.appendChild(a);
+  dbg.appendChild(btn);
+  document.body.appendChild(dbg);
+}
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/maquinas/sw.js').catch(function(){});
+}
+
+// ── PRAZO VENCIDO ──
+function parseHHMM(str) {
+  if (!str) return null;
+  var m = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  var now = new Date();
+  var d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(m[1]), parseInt(m[2]), 0);
+  return d;
+}
+
+function isMaqVencida(m) {
+  if (!m.liberada || !m.liberadaPrazo) return false;
+  var prazo = parseHHMM(m.liberadaPrazo);
+  if (!prazo) return false;
+  return new Date() > prazo;
+}
+
+function atualizarBannerVencidas() {
+  var vencidas = state.machines.filter(function(m) { return isMaqVencida(m); });
+  var banner = document.getElementById('bannerVencidas');
+  if (vencidas.length > 0) {
+    banner.textContent = '🚨 ' + vencidas.length + ' RECOLHA(S) ATRASADA(S)! Toque para ver';
+    banner.style.display = 'block';
+    document.body.style.paddingTop = '44px';
+  } else {
+    banner.style.display = 'none';
+    document.body.style.paddingTop = '0';
+  }
+}
+
+function checkPrazos() {
+  var tinha = false;
+  state.machines.forEach(function(m) {
+    if (isMaqVencida(m)) { tinha = true; }
+  });
+  if (tinha) {
+    renderGrid();
+    renderPanel();
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+  }
+  atualizarBannerVencidas();
+}
+setInterval(checkPrazos, 30000); // verifica a cada 30 seg
+
+// ── INSTALAR NA TELA INICIAL ──
+var deferredInstall = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').style.display = 'flex';
+  document.getElementById('installInstr').textContent = 'Instale o app para acesso rápido na tela inicial.';
+});
+
+// iOS: Safari não dispara beforeinstallprompt — mostra instrução manual
+window.addEventListener('load', function() {
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone === true;
+  if (isIOS && isSafari && !isStandalone) {
+    document.getElementById('installBanner').style.display = 'flex';
+    document.getElementById('installInstr').textContent = 'No Safari: toque em Compartilhar (⎋) → "Adicionar à Tela de Início".';
+    document.getElementById('installBtn').style.display = 'none';
+  }
+});
+
+function doInstall() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function() {
+      document.getElementById('installBanner').style.display = 'none';
+      deferredInstall = null;
+    });
+  }
+}
+
+// ── LIBERAÇÃO ──
+var maqLiberar = null;
+
+function abrirModalLiberar() {
+  maqLiberar = selectedMaq;
+  var m = state.machines[maqLiberar - 1];
+  document.getElementById('liberarSub').textContent = 'Máquina ' + String(m.id).padStart(2,'0') + ' — informe quando foi liberada pelo hospital.';
+  // Preenche select de hospitais
+  var sel = document.getElementById('liberarHospital');
+  sel.innerHTML = '<option value="">— Selecione o hospital —</option>';
+  state.hospitals.forEach(function(h) {
+    var opt = document.createElement('option');
+    opt.value = h.id;
+    opt.textContent = h.nome;
+    if (m.hospital && m.hospital == h.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Hora atual como sugestão
+  var now = new Date();
+  document.getElementById('liberarHora').value = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('liberarPrazo').value = '';
+  document.getElementById('liberarObs').value = '';
+  closeModal('modalMaquina');
+  document.getElementById('modalLiberar').classList.add('open');
+}
+
+function confirmarLiberacao() {
+  var m = state.machines[maqLiberar - 1];
+  var hospId = document.getElementById('liberarHospital').value;
+  var hora = document.getElementById('liberarHora').value.trim() || 'sem horário';
+  var prazo = document.getElementById('liberarPrazo').value.trim();
+  var obs = document.getElementById('liberarObs').value.trim();
+  var hospNome = '';
+  if (hospId) {
+    var h = state.hospitals.find(function(x) { return x.id == hospId; });
+    if (h) { hospNome = h.nome; m.liberadaHosp = hospId; }
+  }
+  m.liberada = true;
+  m.liberadaTs = hora;
+  m.liberadaPrazo = prazo || null;
+  var texto = 'Máquina ' + String(m.id).padStart(2,'0') + ' liberada para recolha' +
+    (hospNome ? ' em ' + hospNome : '') + ' às ' + hora +
+    (prazo ? ' · prazo: ' + prazo : '') +
+    (obs ? ' · ' + obs : '');
+  addHistory('liberacao', texto, getDriver() || 'Técnico');
+  save();
+  closeModal('modalLiberar');
+  renderGrid();
+  renderPanel();
+  showToast('Máquina ' + String(m.id).padStart(2,'0') + ' marcada para recolha!');
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+
+function cancelarLiberacao() {
+  var m = state.machines[selectedMaq - 1];
+  m.liberada = false;
+  m.liberadaTs = null;
+  m.liberadaHosp = null;
+  addHistory('liberacao', 'Liberação cancelada — Máquina ' + String(m.id).padStart(2,'0'), getDriver() || 'Técnico');
+  save();
+  closeModal('modalMaquina');
+  renderGrid();
+  renderPanel();
+  showToast('Liberação cancelada.');
+}
+
+// ── BACKUP ──
+function exportarBackup() {
+  var dados = JSON.stringify(state);
+  var html = document.documentElement.outerHTML;
+  // Injeta os dados como script inline antes do <!-- v1.1 -->
+</body>
+  var backup = html.replace(
+    /\/\/ ── INIT ──/,
+    '// ── RESTORE BACKUP ──\ntry { var _bk = ' + dados.replace(/\\/g,'\\\\').replace(/`/g,'\\`') + '; localStorage.setItem("maqState", JSON.stringify(_bk)); } catch(e){}\n// ── INIT ──'
+  );
+  var blob = new Blob([backup], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var now = new Date();
+  var stamp = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') +
+              '_' + String(now.getHours()).padStart(2,'0') + 'h' + String(now.getMinutes()).padStart(2,'0');
+  a.href = url;
+  a.download = 'maquinas_backup_' + stamp + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup salvo!');
+}
+
+function importarBackup(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var txt = e.target.result;
+    var match = txt.match(/var _bk = ({.*?});/s);
+    if (!match) { showToast('Arquivo inválido!'); return; }
+    try {
+      var dados = JSON.parse(match[1]);
+      localStorage.setItem('maqState', JSON.stringify(dados));
+      showToast('Backup restaurado! Recarregando...');
+      setTimeout(function() { location.reload(); }, 1500);
+    } catch(err) {
+      showToast('Erro ao importar backup.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── INIT ──
+renderGrid();
+renderPanel();
+renderHistorico();
+renderFechGrid();
+atualizarBannerVencidas();
+loadFromFirebase();
 </script>
 <!-- v1.1 -->
 </body>
