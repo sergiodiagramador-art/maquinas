@@ -57,7 +57,7 @@
                 return '<div class="m '+cls+'" onclick="tapM('+m.id+')">'+num+'<small>'+status+'</small></div>';
             }).join('');
             document.getElementById('driver').value = state.d;
-            localStorage.setItem('sos_v37', JSON.stringify(state));
+            localStorage.setItem('sos_v37_ok', JSON.stringify(state));
         }
         function tapM(id) { active = id; document.getElementById('modal-hosp').style.display = 'block'; }
         function closeM() { document.getElementById('modal-hosp').style.display = 'none'; }
@@ -70,7 +70,7 @@
         }
         document.getElementById('h-list').innerHTML = HOSP.map(h => '<div class="opt" onclick="apply(\''+h+'\')">'+h+'</div>').join('');
         function saveD() { state.d = document.getElementById('driver').value; render(); }
-        const s = localStorage.getItem('sos_v37'); if(s) state = JSON.parse(s); render();
+        const s = localStorage.getItem('sos_v37_ok'); if(s) state = JSON.parse(s); render();
     </script>
 </body>
 </html>
